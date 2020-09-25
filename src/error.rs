@@ -11,5 +11,5 @@ pub enum ConfigurationAccessError {
 pub enum ConfigurationMergeError {
     //TODO: Add more details
     IncompatibleNodeSubstitution,
-    IncompatibleValueSubstitution
+    IncompatibleValueSubstitution,
 }

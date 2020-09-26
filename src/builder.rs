@@ -1,6 +1,8 @@
 use crate::source::{AsyncSource, Source};
+use crate::configuration::Configuration;
+use crate::error::SourceDeserializationError;
 
-struct ConfigurationBuilder {
+pub struct ConfigurationBuilder {
     sources: Vec<Box<dyn Source>>,
 }
 
@@ -12,19 +14,25 @@ impl ConfigurationBuilder {
         }
     }
 
-    pub fn add(&mut self, source: Box<dyn Source>) -> &mut Self {
+    pub fn add<D>(&mut self, source: Box<dyn Source>, de : D) -> &mut Self 
+    where 
+        D : FnOnce(String) -> Result<Configuration, SourceDeserializationError>
+    {
         self.sources.push(source);
         self
     }
 
-    pub fn add_async(self, source: Box<dyn AsyncSource>) -> AsyncConfigurationBuilder {
+    pub fn add_async<D>(self, source: Box<dyn AsyncSource>, de : D) -> AsyncConfigurationBuilder 
+    where 
+        D : FnOnce(String) -> Result<Configuration, SourceDeserializationError>
+    {
         let mut async_builder = AsyncConfigurationBuilder::from_synchronous_builder(self);
-        async_builder.add_async(source);
+        async_builder.add_async(source, de);
         async_builder
     }
 }
 
-struct AsyncConfigurationBuilder {
+pub struct AsyncConfigurationBuilder {
     sources: Vec<SourceType>,
 }
 
@@ -45,11 +53,17 @@ impl AsyncConfigurationBuilder {
         }
     }
 
-    pub fn add(&mut self, source: Box<dyn Source>) {
+    pub fn add<D>(&mut self, source: Box<dyn Source>, de : D) 
+    where 
+        D : FnOnce(String) -> Result<Configuration, SourceDeserializationError>
+    {
         self.sources.push(SourceType::Synchronous(source));
     }
 
-    pub fn add_async(&mut self, source: Box<dyn AsyncSource>) {
+    pub fn add_async<D>(&mut self, source: Box<dyn AsyncSource>, de : D) 
+    where 
+        D : FnOnce(String) -> Result<Configuration, SourceDeserializationError>
+    {
         self.sources.push(SourceType::Asynchronous(source));
     }
 }

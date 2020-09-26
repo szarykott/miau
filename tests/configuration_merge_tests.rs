@@ -1,5 +1,6 @@
 use configuration_rs::compound_key;
 use configuration_rs::configuration::Configuration;
+use configuration_rs::error::ConfigurationMergeError;
 
 #[test]
 fn test_single_value_integer_config_merge_json() {
@@ -25,6 +26,19 @@ fn test_single_map_entry_config_merge_json() {
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
     assert_eq!(Some(2), result.drill_get::<i8>(&compound_key!("value")));
+}
+
+#[test]
+fn test_single_map_entry_config_merge_json_wrong_type() {
+    let config_str_1 = r#"{"value" : 1}"#;
+    let config_str_2 = r#"{"value" : "2"}"#;
+
+    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+
+    let result = Configuration::merge(configuration1, configuration2);
+
+    assert_eq!(ConfigurationMergeError::IncompatibleValueSubstitution, result.unwrap_err());
 }
 
 #[test]

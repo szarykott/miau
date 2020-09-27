@@ -5,8 +5,8 @@ pub trait ConfigurationDeserializer {
 }
 
 impl<T> ConfigurationDeserializer for T
-where 
-    T : Fn(String) -> Result<Configuration, SourceDeserializationError>
+where
+    T: Fn(String) -> Result<Configuration, SourceDeserializationError>,
 {
     fn deserialize(&self, input: String) -> Result<Configuration, SourceDeserializationError> {
         self(input)

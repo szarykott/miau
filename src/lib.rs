@@ -4,5 +4,5 @@ pub mod builder;
 pub mod configuration;
 pub mod de;
 pub mod error;
-pub mod source;
 pub mod format;
+pub mod source;

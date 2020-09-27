@@ -1,11 +1,7 @@
 use crate::{
-    de::ConfigurationDeserializer,
-    configuration::Configuration,
-    error::SourceDeserializationError
-}; 
-use std::{
-    default::Default
+    configuration::Configuration, de::ConfigurationDeserializer, error::SourceDeserializationError,
 };
+use std::default::Default;
 
 pub struct YamlDeserializer {}
 

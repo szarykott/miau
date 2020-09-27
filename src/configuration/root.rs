@@ -4,12 +4,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Configuration {
     Value(Option<TypedValue>),
     Map(HashMap<String, Configuration>),
-    Array(Vec<Configuration>)
+    Array(Vec<Configuration>),
+}
+
+#[derive(Debug)]
+pub enum NodeType {
+    Value,
+    Map,
+    Array
 }
 
 impl Configuration {

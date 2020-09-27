@@ -25,7 +25,7 @@ fn test_single_map_entry_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(2), result.drill_get::<i8>(&key!("value")));
+    assert_eq!(Some(2), result.drill_get(&key!("value")));
 }
 
 #[test]

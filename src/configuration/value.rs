@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::mem;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum TypedValue {
     String(String),

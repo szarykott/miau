@@ -7,14 +7,12 @@ use std::path::{Path, PathBuf};
 
 pub struct FileSource {
     path: PathBuf,
-    content: Option<String>,
 }
 
 impl FileSource {
     pub fn from_path<T: AsRef<Path>>(path: T) -> Self {
         FileSource {
             path: path.as_ref().to_path_buf(),
-            content: None,
         }
     }
 }

@@ -57,7 +57,7 @@ impl<'a> ConfigurationBuilder<'a> {
             let input = source.collect()?;
             Ok(de.deserialize(input)?)
         } else {
-            panic!("Empty builder")
+            panic!("Empty builder") //TODO: Do not panic!
         }
     }
 }

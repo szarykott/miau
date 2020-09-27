@@ -9,14 +9,10 @@ use std::convert::TryFrom;
 pub enum Configuration {
     Value(Option<TypedValue>),
     Map(HashMap<String, Configuration>),
-    Array(Vec<Configuration>),
+    Array(Vec<Configuration>)
 }
 
 impl Configuration {
-    pub fn empty() -> Self {
-        Configuration::Value(None)
-    }
-
     pub fn drill_get<'a, T>(&'a self, keys: &CompoundKey) -> Option<T>
     where
         T: TryFrom<&'a TypedValue, Error = ConfigurationAccessError>,

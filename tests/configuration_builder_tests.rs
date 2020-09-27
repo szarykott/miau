@@ -1,21 +1,12 @@
 use configuration_rs::builder::ConfigurationBuilder;
-use configuration_rs::configuration::Configuration;
-use configuration_rs::error::SourceDeserializationError;
 use configuration_rs::key;
 use configuration_rs::source::InMemorySource;
+use configuration_rs::format::{
+    YamlDeserializer, JsonDeserializer
+};
 
 #[test]
 fn test() {
-    let de_json = |st: String| {
-        serde_json::from_str::<Configuration>(&st)
-            .map_err(|e| SourceDeserializationError::SerdeError(e.to_string()))
-    };
-
-    let de_yaml = |st: String| {
-        serde_yaml::from_str::<Configuration>(&st)
-            .map_err(|e| SourceDeserializationError::SerdeError(e.to_string()))
-    };
-
     let mut builder = ConfigurationBuilder::new();
     builder.add(
         InMemorySource::from_str(
@@ -25,10 +16,9 @@ fn test() {
                 "map" : {
                     "bool" : true
                 }
-            })
-            .to_string(),
+            }).to_string(),
         ),
-        de_json.clone(),
+        JsonDeserializer::new(),
     );
 
     builder.add(
@@ -42,7 +32,7 @@ fn test() {
             })
             .to_string(),
         ),
-        de_json.clone(),
+        JsonDeserializer::new(),
     );
 
     builder.add(
@@ -54,7 +44,7 @@ map:
   nulla: ~"#
                 .trim(),
         ),
-        de_yaml.clone(),
+        YamlDeserializer::new(),
     );
 
     let cfg = builder.build().unwrap();

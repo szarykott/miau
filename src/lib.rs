@@ -5,3 +5,4 @@ pub mod configuration;
 pub mod de;
 pub mod error;
 pub mod source;
+pub mod format;

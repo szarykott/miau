@@ -1,6 +1,7 @@
 use super::Source;
 use crate::error::SourceCollectionError;
 use std::string::FromUtf8Error;
+use std::convert::Into;
 
 pub struct InMemorySource {
     value: String,

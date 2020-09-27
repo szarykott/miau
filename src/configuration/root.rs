@@ -13,6 +13,10 @@ pub enum Configuration {
 }
 
 impl Configuration {
+    pub fn empty() -> Self {
+        Configuration::Value(None)
+    }
+
     pub fn drill_get<'a, T>(&'a self, keys: &CompoundKey) -> Option<T>
     where
         T: TryFrom<&'a TypedValue, Error = ConfigurationAccessError>,

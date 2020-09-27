@@ -1,20 +1,20 @@
 use super::Source;
-use std::path::{PathBuf, Path};
+use crate::error::SourceCollectionError;
 use std::convert::AsRef;
 use std::fs::File;
-use crate::error::SourceCollectionError;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 
-struct FileSource {
-    path : PathBuf,
-    content : Option<String>
+pub struct FileSource {
+    path: PathBuf,
+    content: Option<String>,
 }
 
 impl FileSource {
-    pub fn from_path<T : AsRef<Path>>(path : T) -> Self {
+    pub fn from_path<T: AsRef<Path>>(path: T) -> Self {
         FileSource {
-            path : path.as_ref().to_path_buf(),
-            content : None
+            path: path.as_ref().to_path_buf(),
+            content: None,
         }
     }
 }

@@ -1,8 +1,11 @@
-mod memory;
 mod file;
+mod memory;
 
-use async_trait::async_trait;
 use crate::error::SourceCollectionError;
+use async_trait::async_trait;
+
+pub use file::FileSource;
+pub use memory::InMemorySource;
 
 /// Describes synchronous config source.
 pub trait Source {

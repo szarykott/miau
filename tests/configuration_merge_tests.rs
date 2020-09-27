@@ -1,6 +1,6 @@
-use configuration_rs::compound_key;
 use configuration_rs::configuration::Configuration;
 use configuration_rs::error::ConfigurationMergeError;
+use configuration_rs::key;
 
 #[test]
 fn test_single_value_integer_config_merge_json() {
@@ -25,7 +25,7 @@ fn test_single_map_entry_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(2), result.drill_get::<i8>(&compound_key!("value")));
+    assert_eq!(Some(2), result.drill_get::<i8>(&key!("value")));
 }
 
 #[test]
@@ -54,8 +54,8 @@ fn test_two_map_entries_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(1), result.drill_get::<i8>(&compound_key!("value1")));
-    assert_eq!(Some(2), result.drill_get::<i8>(&compound_key!("value2")));
+    assert_eq!(Some(1), result.drill_get::<i8>(&key!("value1")));
+    assert_eq!(Some(2), result.drill_get::<i8>(&key!("value2")));
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn test_single_array_entry_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(2), result.drill_get(&compound_key!(0u8)));
+    assert_eq!(Some(2), result.drill_get(&key!(0u8)));
 }
 
 #[test]
@@ -115,21 +115,18 @@ fn test_complex_map_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(
-        Some("Andrew"),
-        result.drill_get(&compound_key!("firstName"))
-    );
-    assert_eq!(Some("Smith"), result.drill_get(&compound_key!("lastName")));
-    assert_eq!(Some(false), result.drill_get(&compound_key!("isAlive")));
+    assert_eq!(Some("Andrew"), result.drill_get(&key!("firstName")));
+    assert_eq!(Some("Smith"), result.drill_get(&key!("lastName")));
+    assert_eq!(Some(false), result.drill_get(&key!("isAlive")));
     assert_eq!(
         Some("Knowhere"),
-        result.drill_get(&compound_key!("address", "streetAddress"))
+        result.drill_get(&key!("address", "streetAddress"))
     );
     assert_eq!(
         Some("work"),
-        result.drill_get(&compound_key!("phoneNumbers", 0u32, "type"))
+        result.drill_get(&key!("phoneNumbers", 0u32, "type"))
     );
-    assert_eq!(Some(true), result.drill_get(&compound_key!("spouse")));
+    assert_eq!(Some(true), result.drill_get(&key!("spouse")));
 }
 
 #[test]
@@ -158,12 +155,6 @@ fn test_array_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(
-        Some(12),
-        result.drill_get(&compound_key!("array", 0u8, "k"))
-    );
-    assert_eq!(
-        None,
-        result.drill_get::<i32>(&compound_key!("array", 1u8, "k"))
-    );
+    assert_eq!(Some(12), result.drill_get(&key!("array", 0u8, "k")));
+    assert_eq!(None, result.drill_get::<i32>(&key!("array", 1u8, "k")));
 }

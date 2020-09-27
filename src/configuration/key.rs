@@ -4,7 +4,7 @@ use std::convert::From;
 pub type CompoundKey = Vec<Key>;
 
 #[macro_export]
-macro_rules! compound_key {
+macro_rules! key {
     [$($val:expr),*] => {{
         let mut ck : $crate::configuration::CompoundKey = Vec::new();
         $(ck.push($crate::configuration::Key::from($val));)*

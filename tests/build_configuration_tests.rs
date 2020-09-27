@@ -1,5 +1,5 @@
-use configuration_rs::compound_key;
 use configuration_rs::configuration::{Configuration, TypedValue};
+use configuration_rs::key;
 use std::collections::HashMap;
 
 #[test]
@@ -44,22 +44,10 @@ key2:
 
     let configuration = configuration.unwrap();
 
-    assert_eq!(
-        Some("value1"),
-        configuration.drill_get(&compound_key!["key1"])
-    );
-    assert_eq!(
-        Some("value2"),
-        configuration.drill_get(&compound_key!["key2", 0u8])
-    );
-    assert_eq!(
-        Some("value3"),
-        configuration.drill_get(&compound_key!["key2", 1u8])
-    );
-    assert_eq!(
-        Some(1),
-        configuration.drill_get(&compound_key!["key2", 2u8])
-    );
+    assert_eq!(Some("value1"), configuration.drill_get(&key!["key1"]));
+    assert_eq!(Some("value2"), configuration.drill_get(&key!["key2", 0u8]));
+    assert_eq!(Some("value3"), configuration.drill_get(&key!["key2", 1u8]));
+    assert_eq!(Some(1), configuration.drill_get(&key!["key2", 2u8]));
 }
 
 #[test]
@@ -86,22 +74,22 @@ fn build_tree_from_json_1() {
 
     let root = configuration.unwrap();
 
-    assert_eq!(Some("file"), root.drill_get(&compound_key!("menu", "id")));
-    assert_eq!(Some(1), root.drill_get(&compound_key!("menu", "value")));
+    assert_eq!(Some("file"), root.drill_get(&key!("menu", "id")));
+    assert_eq!(Some(1), root.drill_get(&key!("menu", "value")));
     assert_eq!(
         Some(1.2f32),
-        root.drill_get(&compound_key!("menu", "popup", "menuitem", 0u8, "value"))
+        root.drill_get(&key!("menu", "popup", "menuitem", 0u8, "value"))
     );
     assert_eq!(
         None,
-        root.drill_get::<i8>(&compound_key!("menu", "popup", "menuitem", 0u8, "onclick"))
+        root.drill_get::<i8>(&key!("menu", "popup", "menuitem", 0u8, "onclick"))
     );
     assert_eq!(
         Some(true),
-        root.drill_get(&compound_key!("menu", "popup", "menuitem", 1u8, "value"))
+        root.drill_get(&key!("menu", "popup", "menuitem", 1u8, "value"))
     );
     assert_eq!(
         Some(-12.1),
-        root.drill_get(&compound_key!("menu", "popup", "menuitem", 1u8, "onclick"))
+        root.drill_get(&key!("menu", "popup", "menuitem", 1u8, "onclick"))
     );
 }

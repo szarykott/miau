@@ -2,6 +2,9 @@ use std::convert::From;
 use crate::{
     configuration::{NodeType, Key},
 };
+use std::{
+    fmt::Display
+};
 
 #[derive(Debug)]
 pub struct Error {
@@ -15,11 +18,11 @@ struct ErrorImpl {
 
 #[derive(Debug)]
 pub enum Category {
-    Generic,
     ConfigurationAccess,
     ConfigurationMerge,
     SourceCollection,
-    SourceDeserialization
+    SourceDeserialization,
+    Other
 }
 
 #[derive(Debug)]
@@ -51,7 +54,53 @@ impl Error {
             | ErrorCode::IncompatibleValueSubstitution(_, _, _) => Category::ConfigurationMerge,
             ErrorCode::IoError(_) => Category::SourceCollection,
             ErrorCode::SerdeError(_) => Category::SourceDeserialization,
-            ErrorCode::GenericError(_) => Category::Generic
+            ErrorCode::GenericError(_) => Category::Other
+        }
+    }
+}
+
+// TODO: Finish implementing Error display
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.inner.error_code {
+            ErrorCode::UnexpectedNodeType(_, _, _) => {}
+            ErrorCode::UnexpectedValueType(_, _) => {}
+            ErrorCode::IndexOutOfRange(_, _) => {}
+            ErrorCode::WrongKeyType(_, _) => {}
+            ErrorCode::KeyNotFound(_, _) => {}
+            ErrorCode::IncompatibleNodeSubstitution(_, _, _) => {}
+            ErrorCode::IncompatibleValueSubstitution(_, _, _) => {}
+            ErrorCode::IoError(_) => {}
+            ErrorCode::GenericError(_) => {}
+            ErrorCode::SerdeError(_) => {}
+        }
+
+        unimplemented!()
+    }
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self.inner.error_code {
+            ErrorCode::IoError(ref e) => Some(e),
+            ErrorCode::GenericError(ref e) => Some(e.as_ref()),
+            _ => None
+        }
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::from(ErrorCode::IoError(e))
+    }
+}
+
+impl From<ErrorCode> for Error {
+    fn from(e: ErrorCode) -> Self {
+        Error {
+            inner : Box::new(ErrorImpl {
+                error_code : e
+            })
         }
     }
 }

@@ -7,7 +7,7 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct Error {
+pub struct ConfigurationError {
     inner : Box<ErrorImpl>
 }
 
@@ -25,16 +25,17 @@ pub enum Category {
     Other
 }
 
+// TODO: Check if it can be done so that keys are not Option
 #[derive(Debug)]
 pub enum ErrorCode {
-    UnexpectedNodeType(Key, NodeType, NodeType),
+    UnexpectedNodeType(Option<Key>, NodeType, NodeType),
     UnexpectedValueType(String, String),
     IndexOutOfRange(Key, usize),
     WrongKeyType(Key, String),
     KeyNotFound(Key, String),
     //
-    IncompatibleNodeSubstitution(Key, NodeType, NodeType),
-    IncompatibleValueSubstitution(Key, &'static str, &'static str),
+    IncompatibleNodeSubstitution(Option<Key>, NodeType, NodeType),
+    IncompatibleValueSubstitution(Option<Key>, String, String),
     //
     IoError(std::io::Error),
     GenericError(Box<dyn std::error::Error>),
@@ -42,7 +43,7 @@ pub enum ErrorCode {
     SerdeError(String),
 }
 
-impl Error {
+impl ConfigurationError {
     pub fn category(&self) -> Category {
         match self.inner.error_code {
             ErrorCode::UnexpectedNodeType(_, _, _) 
@@ -60,10 +61,10 @@ impl Error {
 }
 
 // TODO: Finish implementing Error display
-impl Display for Error {
+impl Display for ConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.inner.error_code {
-            ErrorCode::UnexpectedNodeType(_, _, _) => {}
+        match &self.inner.error_code {
+            ErrorCode::UnexpectedNodeType(k, exp, act) => { write!(f, "Expected {}, found {} at {:?}.", exp, act, k); } //TODO: Non debug display
             ErrorCode::UnexpectedValueType(_, _) => {}
             ErrorCode::IndexOutOfRange(_, _) => {}
             ErrorCode::WrongKeyType(_, _) => {}
@@ -79,7 +80,7 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {
+impl std::error::Error for ConfigurationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self.inner.error_code {
             ErrorCode::IoError(ref e) => Some(e),
@@ -89,70 +90,18 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for ConfigurationError {
     fn from(e: std::io::Error) -> Self {
-        Error::from(ErrorCode::IoError(e))
+        ConfigurationError::from(ErrorCode::IoError(e))
     }
 }
 
-impl From<ErrorCode> for Error {
+impl From<ErrorCode> for ConfigurationError {
     fn from(e: ErrorCode) -> Self {
-        Error {
+        ConfigurationError {
             inner : Box::new(ErrorImpl {
                 error_code : e
             })
         }
     }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum ConfigurationAccessError {
-    UnexpectedNodeType(&'static str, &'static str),
-    UnexpectedValueType(&'static str, &'static str),
-    IndexOutOfRange(usize),
-    WrongKeyType(String),
-    KeyNotFound(String),
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum ConfigurationMergeError {
-    //TODO: Add more details
-    IncompatibleNodeSubstitution,
-    IncompatibleValueSubstitution,
-}
-
-#[derive(Debug)]
-pub enum SourceError {
-    CollectionError(SourceCollectionError),
-    DeserializationError(SourceDeserializationError),
-}
-
-impl From<SourceCollectionError> for SourceError {
-    fn from(e: SourceCollectionError) -> Self {
-        SourceError::CollectionError(e)
-    }
-}
-
-impl From<SourceDeserializationError> for SourceError {
-    fn from(e: SourceDeserializationError) -> Self {
-        SourceError::DeserializationError(e)
-    }
-}
-
-#[derive(Debug)]
-pub enum SourceCollectionError {
-    IoError(std::io::Error),
-    GenericError(Box<dyn std::error::Error>),
-}
-
-impl From<std::io::Error> for SourceCollectionError {
-    fn from(e: std::io::Error) -> Self {
-        SourceCollectionError::IoError(e)
-    }
-}
-
-#[derive(Debug)]
-pub enum SourceDeserializationError {
-    SerdeError(String),
-    GenericError(Box<dyn std::error::Error>),
 }

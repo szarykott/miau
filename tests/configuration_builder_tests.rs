@@ -6,7 +6,6 @@ use configuration_rs::{
         YamlDeserializer, JsonDeserializer
     },
     configuration::Configuration,
-    error::ConfigurationMergeError
 };
 use rstest::{
     rstest, fixture

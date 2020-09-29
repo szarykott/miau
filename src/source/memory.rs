@@ -1,5 +1,5 @@
 use super::Source;
-use crate::error::SourceCollectionError;
+use crate::error::ConfigurationError;
 use std::string::FromUtf8Error;
 
 pub struct InMemorySource {
@@ -21,7 +21,7 @@ impl InMemorySource {
 }
 
 impl Source for InMemorySource {
-    fn collect(&self) -> Result<String, SourceCollectionError> {
+    fn collect(&self) -> Result<String, ConfigurationError> {
         Ok(self.value.clone())
     }
 }

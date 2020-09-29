@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::convert::From;
+use std::{convert::From, fmt};
 
 pub type CompoundKey = Vec<Key>;
 
@@ -17,6 +17,15 @@ macro_rules! key {
 pub enum Key {
     Array(usize),
     Map(String),
+}
+
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Key::Array(i) => write!(f, "Key::Array({})", i),
+            Key::Map(k) => write!(f, "Key::Map({})", k)
+        }
+    }
 }
 
 impl From<String> for Key {

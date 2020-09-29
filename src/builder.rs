@@ -1,7 +1,7 @@
 use crate::{
     configuration::Configuration,
     de::ConfigurationDeserializer,
-    error::SourceError,
+    error::ConfigurationError,
     source::{AsyncSource, Source},
 };
 
@@ -39,7 +39,7 @@ impl<'a> ConfigurationBuilder<'a> {
         async_builder
     }
 
-    pub fn build(&mut self) -> Result<Configuration, SourceError> {
+    pub fn build(&mut self) -> Result<Configuration, ConfigurationError> {
         if self.sources.len() > 1 {
             let (source, de) = self.sources.remove(0);
             let input = source.collect()?;

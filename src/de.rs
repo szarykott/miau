@@ -1,14 +1,14 @@
-use crate::{configuration::Configuration, error::SourceDeserializationError};
+use crate::{configuration::Configuration, error::ConfigurationError};
 
 pub trait ConfigurationDeserializer {
-    fn deserialize(&self, input: String) -> Result<Configuration, SourceDeserializationError>;
+    fn deserialize(&self, input: String) -> Result<Configuration, ConfigurationError>;
 }
 
 impl<T> ConfigurationDeserializer for T
 where
-    T: Fn(String) -> Result<Configuration, SourceDeserializationError>,
+    T: Fn(String) -> Result<Configuration, ConfigurationError>,
 {
-    fn deserialize(&self, input: String) -> Result<Configuration, SourceDeserializationError> {
+    fn deserialize(&self, input: String) -> Result<Configuration, ConfigurationError> {
         self(input)
     }
 }

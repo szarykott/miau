@@ -1,9 +1,13 @@
-use super::Source;
-use crate::error::SourceCollectionError;
-use std::convert::AsRef;
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use crate::{
+    error::ConfigurationError,
+    source::Source
+};
+use std::{
+    fs::File,
+    convert::AsRef,
+    io::Read,
+    path::{Path, PathBuf}
+};
 
 pub struct FileSource {
     path: PathBuf,
@@ -18,7 +22,7 @@ impl FileSource {
 }
 
 impl Source for FileSource {
-    fn collect(&self) -> Result<String, SourceCollectionError> {
+    fn collect(&self) -> Result<String, ConfigurationError> {
         let mut f = File::open(&self.path)?;
         let mut buffer = String::new();
         f.read_to_string(&mut buffer)?;

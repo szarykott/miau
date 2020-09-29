@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Configuration, de::ConfigurationDeserializer, error::SourceDeserializationError,
+    configuration::Configuration, de::ConfigurationDeserializer, error::{ConfigurationError, ErrorCode},
 };
 use std::default::Default;
 
@@ -18,8 +18,8 @@ impl Default for YamlDeserializer {
 }
 
 impl ConfigurationDeserializer for YamlDeserializer {
-    fn deserialize(&self, input: String) -> Result<Configuration, SourceDeserializationError> {
+    fn deserialize(&self, input: String) -> Result<Configuration, ConfigurationError> {
         serde_yaml::from_str::<Configuration>(&input)
-            .map_err(|e| SourceDeserializationError::SerdeError(e.to_string()))
+            .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }
 }

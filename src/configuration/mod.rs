@@ -1,7 +1,7 @@
 mod key;
-mod root;
+mod core;
 mod value;
 
 pub use key::{CompoundKey, Key};
-pub use root::{Configuration, NodeType};
+pub use self::core::{Configuration, NodeType};
 pub use value::TypedValue;

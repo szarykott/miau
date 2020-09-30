@@ -2,8 +2,8 @@ mod utils;
 
 use configuration_rs::{
     builder::ConfigurationBuilder,
-    configuration::Configuration,
-    error::{Category, ErrorCode},
+    configuration::{Configuration, TypedValue},
+    error::{Category, ErrorCode, ConfigurationError},
     format::{JsonDeserializer, YamlDeserializer},
     key,
     source::InMemorySource,
@@ -168,40 +168,37 @@ fn test_basic_json_data_success(c1: &str, c2: &str, c3: &str, exp: &str) {
     assert_eq!(expected, result);
 }
 
-// TODO: Some of those cases could actually pass just fine e.g "2" and 2
 #[rstest(
     c1,
     c2,
-    case(r#"{"value1" : "1"}"#, r#"{"value1" : 1}"#),
-    case(r#"{"value1" : 1}"#, r#"{"value1" : "1"}"#),
-    case(r#"{"value1" : "two"}"#, r#"{"value1" : 3}"#),
-    case(r#"{"value1" : true}"#, r#"{"value1" : "4"}"#),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : true}"#),
-    case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1}"#)
+    exp,
+    case(r#"{"value1" : "1"}"#, r#"{"value1" : 1}"#, "1"),
+    case(r#"{"value1" : 1}"#, r#"{"value1" : "1"}"#, "1"),
+    case(r#"{"value1" : "two"}"#, r#"{"value1" : 3}"#, "3"),
+    case(r#"{"value1" : true}"#, r#"{"value1" : "4"}"#, "4"),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : true}"#, "true"),
+    case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1}"#, "1")
 )]
-fn test_invalid_value_type_substitution(c1: &str, c2: &str) {
+fn test_different_value_type_substitution(c1: &str, c2: &str, exp : &str)
+{
     let mut builder = ConfigurationBuilder::new();
 
     builder.add(
         InMemorySource::from_str(c1.as_ref()),
-        JsonDeserializer::new(),
+        JsonDeserializer::new()
     );
     builder.add(
         InMemorySource::from_str(c2.as_ref()),
-        JsonDeserializer::new(),
+        JsonDeserializer::new()
     );
 
-    let result = builder.build().unwrap_err();
+    let result = builder.build();
 
-    assert_eq!(Category::ConfigurationMerge, result.category());
-    assert_eq!(
-        VariantEquals::from(&ErrorCode::IncompatibleValueSubstitution(
-            None,
-            "".into(),
-            "".into()
-        )),
-        result.inner().into()
-    );
+    assert!(result.is_ok());
+
+    let result = result.unwrap();
+    let value = result.drill_get::<String>(&key!("value1"));
+    assert_eq!(Some(exp.to_string()), value);
 }
 
 #[test]
@@ -254,6 +251,6 @@ map:
     assert_eq!(Some(true), cfg.drill_get(&key!("json1")));
     assert_eq!(Some(true), cfg.drill_get(&key!("json2")));
     assert_eq!(Some(true), cfg.drill_get(&key!("map", "bool")));
-    assert_eq!(Some("not null"), cfg.drill_get(&key!("map", "nully")));
-    assert_eq!(None, cfg.drill_get::<&str>(&key!("map", "nulla")))
+    assert_eq!(Some("not null".to_string()), cfg.drill_get(&key!("map", "nully")));
+    assert_eq!(None, cfg.drill_get::<String>(&key!("map", "nulla")))
 }

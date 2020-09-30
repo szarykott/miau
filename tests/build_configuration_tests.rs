@@ -44,9 +44,9 @@ key2:
 
     let cfg = configuration.unwrap();
 
-    assert_eq!(Some("value1"), cfg.drill_get(&key!["key1"]));
-    assert_eq!(Some("value2"), cfg.drill_get(&key!["key2", 0u8]));
-    assert_eq!(Some("value3"), cfg.drill_get(&key!["key2", 1u8]));
+    assert_eq!(Some("value1".to_string()), cfg.drill_get(&key!["key1"]));
+    assert_eq!(Some("value2".to_string()), cfg.drill_get(&key!["key2", 0u8]));
+    assert_eq!(Some("value3".to_string()), cfg.drill_get(&key!["key2", 1u8]));
     assert_eq!(Some(1), cfg.drill_get(&key!["key2", 2u8]));
 }
 
@@ -74,7 +74,7 @@ fn build_tree_from_json_1() {
 
     let cfg = configuration.unwrap();
 
-    assert_eq!(Some("file"), cfg.drill_get(&key!("menu", "id")));
+    assert_eq!(Some("file".to_string()), cfg.drill_get(&key!("menu", "id")));
     assert_eq!(Some(1), cfg.drill_get(&key!("menu", "value")));
     assert_eq!(
         Some(1.2f32),

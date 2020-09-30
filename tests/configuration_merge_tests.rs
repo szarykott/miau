@@ -114,15 +114,15 @@ fn test_complex_map_config_merge_json() {
 
     let result = Configuration::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some("Andrew"), result.drill_get(&key!("firstName")));
-    assert_eq!(Some("Smith"), result.drill_get(&key!("lastName")));
+    assert_eq!(Some("Andrew".to_string()), result.drill_get(&key!("firstName")));
+    assert_eq!(Some("Smith".to_string()), result.drill_get(&key!("lastName")));
     assert_eq!(Some(false), result.drill_get(&key!("isAlive")));
     assert_eq!(
-        Some("Knowhere"),
+        Some("Knowhere".to_string()),
         result.drill_get(&key!("address", "streetAddress"))
     );
     assert_eq!(
-        Some("work"),
+        Some("work".to_string()),
         result.drill_get(&key!("phoneNumbers", 0u32, "type"))
     );
     assert_eq!(Some(true), result.drill_get(&key!("spouse")));

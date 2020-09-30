@@ -1,39 +1,58 @@
-use configuration_rs::{
-    key,
-    builder::ConfigurationBuilder,
-    source::InMemorySource,
-    format::{
-        YamlDeserializer, JsonDeserializer
-    },
-    configuration::Configuration,
-};
-use rstest::{
-    rstest, fixture
-};
+mod utils;
 
-#[rstest(c1, c2, c3, exp,
-    case(r#"{"value1" : 1}"#, r#"{"value2" : 2}"#, r#"{"value3" : 3}"#, r#"{"value1":1,"value2":2,"value3":3}"#),
-    case(r#"{"value1" : "1"}"#, r#"{"value2" : "2"}"#, r#"{"value3" : "3"}"#, r#"{"value1":"1","value2":"2","value3":"3"}"#),
-    case(r#"{"value1" : "1"}"#, r#"{"value1" : "2"}"#, r#"{"value3" : 3}"#, r#"{"value1":"2","value3":3}"#),
+use configuration_rs::{
+    builder::ConfigurationBuilder,
+    configuration::Configuration,
+    error::{Category, ErrorCode},
+    format::{JsonDeserializer, YamlDeserializer},
+    key,
+    source::InMemorySource,
+};
+use rstest::{fixture, rstest};
+use utils::VariantEquals;
+
+#[rstest(
+    c1,
+    c2,
+    c3,
+    exp,
+    case(
+        r#"{"value1" : 1}"#,
+        r#"{"value2" : 2}"#,
+        r#"{"value3" : 3}"#,
+        r#"{"value1":1,"value2":2,"value3":3}"#
+    ),
+    case(
+        r#"{"value1" : "1"}"#,
+        r#"{"value2" : "2"}"#,
+        r#"{"value3" : "3"}"#,
+        r#"{"value1":"1","value2":"2","value3":"3"}"#
+    ),
+    case(
+        r#"{"value1" : "1"}"#,
+        r#"{"value1" : "2"}"#,
+        r#"{"value3" : 3}"#,
+        r#"{"value1":"2","value3":3}"#
+    ),
     case(
         r#"{
             "map1" : {
                 "v1" : 1,
                 "v2" : 5
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {},
             "map1" : {
                 "v1" : 2
             }
-        }"#, 
+        }"#,
         r#"{
             "map1" : {
                 "v1" : 3,
                 "v3" : 4
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {},
             "map1" : {
@@ -49,20 +68,20 @@ use rstest::{
                 "v1" : 1,
                 "v2" : [true, true, false]
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {},
             "map1" : {
                 "v1" : 2,
                 "v2" : [false, true, false]
             }
-        }"#, 
+        }"#,
         r#"{
             "map1" : {
                 "v1" : 3,
                 "v3" : 4
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {},
             "map1" : {
@@ -78,7 +97,7 @@ use rstest::{
                 "v1" : 1,
                 "v2" : [true, true, false]
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {
                 "mapi1" : {
@@ -94,7 +113,7 @@ use rstest::{
                 "v1" : 2,
                 "v2" : [false, true, false]
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {
                 "mapi1" : {
@@ -107,7 +126,7 @@ use rstest::{
                 "v1" : 3,
                 "v3" : 4
             }
-        }"#, 
+        }"#,
         r#"{
             "map2" : {
                 "mapi1" : {
@@ -127,29 +146,62 @@ use rstest::{
         }"#
     )
 )]
-fn test_basic_json_data_success(c1 : &str, c2 : &str, c3 : &str, exp : &str) {
+fn test_basic_json_data_success(c1: &str, c2: &str, c3: &str, exp: &str) {
     let mut builder = ConfigurationBuilder::new();
-    
-    builder.add(InMemorySource::from_str(c1.as_ref()), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2.as_ref()), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c3.as_ref()), JsonDeserializer::new());   
-    
+
+    builder.add(
+        InMemorySource::from_str(c1.as_ref()),
+        JsonDeserializer::new(),
+    );
+    builder.add(
+        InMemorySource::from_str(c2.as_ref()),
+        JsonDeserializer::new(),
+    );
+    builder.add(
+        InMemorySource::from_str(c3.as_ref()),
+        JsonDeserializer::new(),
+    );
+
     let result = builder.build().unwrap();
-    let expected = serde_json::from_str::<Configuration>(exp.as_ref()).unwrap();   
-    
+    let expected = serde_json::from_str::<Configuration>(exp.as_ref()).unwrap();
+
     assert_eq!(expected, result);
 }
 
-#[rstest(c1, c2,
-    case(r#"{"value1" : 1}"#, r#"{"value2" : 2}"#),
-    case(r#"{"value1" : 1}"#, r#"{"value2" : 2}"#)
+// TODO: Some of those cases could actually pass just fine e.g "2" and 2
+#[rstest(
+    c1,
+    c2,
+    case(r#"{"value1" : "1"}"#, r#"{"value1" : 1}"#),
+    case(r#"{"value1" : 1}"#, r#"{"value1" : "1"}"#),
+    case(r#"{"value1" : "two"}"#, r#"{"value1" : 3}"#),
+    case(r#"{"value1" : true}"#, r#"{"value1" : "4"}"#),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : true}"#),
+    case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1}"#)
 )]
-fn test_invalid_type_substitution(c1 : &str, c2 : &str) {
+fn test_invalid_value_type_substitution(c1: &str, c2: &str) {
     let mut builder = ConfigurationBuilder::new();
 
-    builder.add(InMemorySource::from_str(c1.as_ref()), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2.as_ref()), JsonDeserializer::new());
+    builder.add(
+        InMemorySource::from_str(c1.as_ref()),
+        JsonDeserializer::new(),
+    );
+    builder.add(
+        InMemorySource::from_str(c2.as_ref()),
+        JsonDeserializer::new(),
+    );
 
+    let result = builder.build().unwrap_err();
+
+    assert_eq!(Category::ConfigurationMerge, result.category());
+    assert_eq!(
+        VariantEquals::from(&ErrorCode::IncompatibleValueSubstitution(
+            None,
+            "".into(),
+            "".into()
+        )),
+        result.inner().into()
+    );
 }
 
 #[test]
@@ -163,7 +215,8 @@ fn test() {
                 "map" : {
                     "bool" : true
                 }
-            }).to_string(),
+            })
+            .to_string(),
         ),
         JsonDeserializer::new(),
     );

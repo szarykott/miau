@@ -1,13 +1,9 @@
 use crate::{
     configuration::{CompoundKey, Key, TypedValue},
-    error::{ConfigurationError, ErrorCode}
+    error::{ConfigurationError, ErrorCode},
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap, 
-    fmt::Display,
-    convert::TryFrom
-};
+use std::{collections::HashMap, convert::TryFrom, fmt::Display};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
@@ -17,11 +13,11 @@ pub enum Configuration {
     Array(Vec<Configuration>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum NodeType {
     Value,
     Map,
-    Array
+    Array,
 }
 
 impl Display for NodeType {
@@ -29,7 +25,7 @@ impl Display for NodeType {
         match self {
             NodeType::Value => write!(f, "Value"),
             NodeType::Map => write!(f, "Map"),
-            NodeType::Array => write!(f, "Array")
+            NodeType::Array => write!(f, "Array"),
         }
     }
 }
@@ -51,28 +47,40 @@ impl Configuration {
         match self {
             Configuration::Value(_) => NodeType::Value,
             Configuration::Map(_) => NodeType::Map,
-            Configuration::Array(_) => NodeType::Array
+            Configuration::Array(_) => NodeType::Array,
         }
     }
 
     fn get(&self, key: &Key) -> Result<&Configuration, ConfigurationError> {
         match self {
             Configuration::Value(_) => match key {
-                Key::Array(_) => Err(ErrorCode::UnexpectedNodeType(Some(key.clone()), NodeType::Array, NodeType::Value).into()),
-                Key::Map(_) => Err(ErrorCode::UnexpectedNodeType(Some(key.clone()), NodeType::Map, NodeType::Value).into())
+                Key::Array(_) => Err(ErrorCode::UnexpectedNodeType(
+                    Some(key.clone()),
+                    NodeType::Array,
+                    NodeType::Value,
+                )
+                .into()),
+                Key::Map(_) => Err(ErrorCode::UnexpectedNodeType(
+                    Some(key.clone()),
+                    NodeType::Map,
+                    NodeType::Value,
+                )
+                .into()),
             },
             Configuration::Array(array) => match key {
                 Key::Array(index) => match array.get(*index) {
                     Some(node) => Ok(node),
                     None => Err(ErrorCode::IndexOutOfRange(key.clone(), *index).into()),
                 },
-                Key::Map(inner_key) => Err(ErrorCode::WrongKeyType(key.clone(), inner_key.to_owned()).into()),
+                Key::Map(inner_key) => {
+                    Err(ErrorCode::WrongKeyType(key.clone(), inner_key.to_owned()).into())
+                }
             },
             Configuration::Map(map) => match key {
                 Key::Array(i) => Err(ErrorCode::WrongKeyType(key.clone(), i.to_string()).into()),
                 Key::Map(k) => match map.get(k) {
                     Some(node) => Ok(node),
-                    None => Err(ErrorCode::KeyNotFound(key.clone(), k.to_owned()).into()) //TODO: Fix this error
+                    None => Err(ErrorCode::KeyNotFound(key.clone(), k.to_owned()).into()), //TODO: Fix this error
                 },
             },
         }
@@ -88,8 +96,12 @@ impl Configuration {
                 Err(e) => Err(e),
             },
             Configuration::Value(None) => Ok(None),
-            Configuration::Array(_) => Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Array).into()),
-            Configuration::Map(_) => Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Map).into())
+            Configuration::Array(_) => {
+                Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Array).into())
+            }
+            Configuration::Map(_) => {
+                Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Map).into())
+            }
         }
     }
 
@@ -102,15 +114,24 @@ impl Configuration {
                 if TypedValue::is_substitutable_type_option(&vp, &vn) {
                     Ok(Configuration::Value(vn))
                 } else {
-                    Err(ErrorCode::IncompatibleValueSubstitution(None, TypedValue::display_option(vp), TypedValue::display_option(vn)).into()) 
+                    Err(ErrorCode::IncompatibleValueSubstitution(
+                        None,
+                        TypedValue::display_option(vp),
+                        TypedValue::display_option(vn),
+                    )
+                    .into())
                 }
             }
             (Configuration::Map(mp), Configuration::Map(mn)) => {
-                let merged = Configuration::merge_maps(mp, mn)?;
-                Ok(Configuration::Map(merged))
+                Ok(Configuration::Map(Configuration::merge_maps(mp, mn)?))
             }
             (Configuration::Array(_), nn @ Configuration::Array(_)) => Ok(nn),
-            (vp, vm) => Err(ErrorCode::IncompatibleNodeSubstitution(None, vp.node_type(), vm.node_type()).into()),
+            (vp, vm) => {
+                Err(
+                    ErrorCode::IncompatibleNodeSubstitution(None, vp.node_type(), vm.node_type())
+                        .into(),
+                )
+            }
         }
     }
 
@@ -128,7 +149,12 @@ impl Configuration {
                         if TypedValue::is_substitutable_type_option(&v1, &v2) {
                             previous.insert(key, Configuration::Value(v2));
                         } else {
-                            return Err(ErrorCode::IncompatibleValueSubstitution(None, TypedValue::display_option(v1), TypedValue::display_option(v2)).into());
+                            return Err(ErrorCode::IncompatibleValueSubstitution(
+                                None,
+                                TypedValue::display_option(v1),
+                                TypedValue::display_option(v2),
+                            )
+                            .into());
                         }
                     }
                     (Configuration::Map(mp), Configuration::Map(mn)) => {
@@ -138,7 +164,14 @@ impl Configuration {
                     (Configuration::Array(_), nn @ Configuration::Array(_)) => {
                         previous.insert(key, nn);
                     }
-                    (vp, vn) => return Err(ErrorCode::IncompatibleNodeSubstitution(None, vp.node_type(), vn.node_type()).into())
+                    (vp, vn) => {
+                        return Err(ErrorCode::IncompatibleNodeSubstitution(
+                            None,
+                            vp.node_type(),
+                            vn.node_type(),
+                        )
+                        .into())
+                    }
                 }
             }
         }

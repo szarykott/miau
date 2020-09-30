@@ -23,7 +23,7 @@ impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Key::Array(i) => write!(f, "Key::Array({})", i),
-            Key::Map(k) => write!(f, "Key::Map({})", k)
+            Key::Map(k) => write!(f, "Key::Map({})", k),
         }
     }
 }

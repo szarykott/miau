@@ -1,12 +1,9 @@
-use crate::{
-    error::ConfigurationError,
-    source::Source
-};
+use crate::{error::ConfigurationError, source::Source};
 use std::{
-    fs::File,
     convert::AsRef,
+    fs::File,
     io::Read,
-    path::{Path, PathBuf}
+    path::{Path, PathBuf},
 };
 
 pub struct FileSource {

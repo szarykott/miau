@@ -48,7 +48,7 @@ impl<'a> ConfigurationBuilder<'a> {
             for (source, de) in self.sources.iter() {
                 let input = source.collect()?;
                 let configuration = de.deserialize(input)?;
-                result = Configuration::merge(result, configuration).unwrap(); // TODO: Fix it
+                result = Configuration::merge(result, configuration)?;
             }
 
             Ok(result)

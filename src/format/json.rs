@@ -1,5 +1,7 @@
 use crate::{
-    configuration::Configuration, de::ConfigurationDeserializer, error::{ConfigurationError, ErrorCode},
+    configuration::Configuration,
+    de::ConfigurationDeserializer,
+    error::{ConfigurationError, ErrorCode},
 };
 use std::default::Default;
 

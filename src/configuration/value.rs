@@ -37,10 +37,49 @@ impl TypedValue {
         }
     }
 
-    pub fn display_option(this : Option<Self>) -> String {
+    pub fn display_option(this: Option<Self>) -> String {
         match this {
             Some(v) => v.to_string(),
-            None => "None".to_string()
+            None => "None".to_string(),
+        }
+    }
+
+    pub fn try_convert_option(
+        prev: Option<TypedValue>,
+        next: Option<TypedValue>,
+    ) -> Result<Option<TypedValue>, ConfigurationError> {
+        match (prev, next) {
+            (None, s) => Ok(s),
+            (Some(_), None) => Ok(None),
+            (Some(pv), Some(nv)) => match (pv, nv) {
+                (TypedValue::String(_), nv @ TypedValue::String(_)) => Ok(next),
+                (TypedValue::String(pv), TypedValue::Bool(_)) => {
+                    if let Ok(_) = pv.parse::<bool>() {
+                        Ok(Some(nv))
+                    } else {
+                        Err(ErrorCode::IncompatibleValueSubstitution(
+                            None,
+                            TypedValue::display_option(prev),
+                            TypedValue::display_option(next),
+                        )
+                        .into())
+                    }
+                }
+                (TypedValue::String(_), TypedValue::SignedInteger(_)) => {}
+                (TypedValue::String(_), TypedValue::Float(_)) => {}
+                (TypedValue::Bool(_), TypedValue::String(_)) => {}
+                (TypedValue::Bool(_), TypedValue::Bool(_)) => Ok(next),
+                (TypedValue::Bool(_), TypedValue::SignedInteger(_)) => {}
+                (TypedValue::Bool(_), TypedValue::Float(_)) => {}
+                (TypedValue::SignedInteger(_), TypedValue::String(_)) => {}
+                (TypedValue::SignedInteger(_), TypedValue::Bool(_)) => {}
+                (TypedValue::SignedInteger(_), TypedValue::SignedInteger(_)) => Ok(next),
+                (TypedValue::SignedInteger(_), TypedValue::Float(_)) => {}
+                (TypedValue::Float(_), TypedValue::String(_)) => {}
+                (TypedValue::Float(_), TypedValue::Bool(_)) => {}
+                (TypedValue::Float(_), TypedValue::SignedInteger(_)) => {}
+                (TypedValue::Float(_), TypedValue::Float(_)) => Ok(next),
+            },
         }
     }
 }
@@ -86,7 +125,8 @@ impl<'a> TryFrom<&'a TypedValue> for &'a str {
             Err(ErrorCode::UnexpectedValueType(
                 "String".to_string(),
                 value.underlying_type().to_string(),
-            ).into())
+            )
+            .into())
         }
     }
 }
@@ -101,7 +141,8 @@ impl TryFrom<&TypedValue> for String {
             Err(ErrorCode::UnexpectedValueType(
                 "String".to_string(),
                 value.underlying_type().to_string(),
-            ).into())
+            )
+            .into())
         }
     }
 }

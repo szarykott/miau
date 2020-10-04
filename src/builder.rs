@@ -1,15 +1,23 @@
 use crate::{
     configuration::Configuration,
-    de::ConfigurationDeserializer,
+    format::ConfigurationDeserializer,
     error::ConfigurationError,
     source::{AsyncSource, Source},
 };
+
+use std::default::Default;
 
 pub struct ConfigurationBuilder<'a> {
     sources: Vec<(
         Box<dyn Source + 'a>,
         Box<dyn ConfigurationDeserializer + 'a>,
     )>,
+}
+
+impl<'a> Default for ConfigurationBuilder<'a> {
+    fn default() -> Self {
+        ConfigurationBuilder::new()
+    }
 }
 
 /// Holds intermediate configuration sources in order of adding them.
@@ -40,25 +48,15 @@ impl<'a> ConfigurationBuilder<'a> {
     }
 
     pub fn build(&mut self) -> Result<Configuration, ConfigurationError> {
-        if self.sources.len() > 1 {
-            let (source, de) = self.sources.remove(0);
-            let input = source.collect()?;
-            let mut result = de.deserialize(input)?;
+        let mut result = Configuration::default();
 
-            for (source, de) in self.sources.iter() {
-                let input = source.collect()?;
-                let configuration = de.deserialize(input)?;
-                result = Configuration::merge(result, configuration)?;
-            }
-
-            Ok(result)
-        } else if self.sources.len() == 1 {
-            let (source, de) = self.sources.remove(0);
+        for (source, de) in self.sources.iter_mut() {
             let input = source.collect()?;
-            Ok(de.deserialize(input)?)
-        } else {
-            panic!("Empty builder") //TODO: Do not panic!
+            let configuration = de.deserialize(input)?;
+            result.add_root(configuration);
         }
+
+        Ok(result)
     }
 }
 

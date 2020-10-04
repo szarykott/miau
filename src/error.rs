@@ -1,6 +1,8 @@
 use crate::configuration::{Key, NodeType};
 use std::{convert::From, fmt::Display};
+use serde::de;
 
+// TODO: Add Locaction, a Vec<Key> to mark place where error occured
 #[derive(Debug)]
 pub struct ConfigurationError {
     inner: Box<ErrorCode>,
@@ -28,6 +30,7 @@ pub enum ErrorCode {
     IoError(std::io::Error),
     GenericError(Box<dyn std::error::Error>),
     SerdeError(String),
+    MissingValue
 }
 
 impl ConfigurationError {
@@ -37,6 +40,7 @@ impl ConfigurationError {
             | ErrorCode::UnexpectedValueType(_, _)
             | ErrorCode::IndexOutOfRange(_, _)
             | ErrorCode::WrongKeyType(_, _)
+            | ErrorCode::MissingValue
             | ErrorCode::KeyNotFound(_, _) => Category::ConfigurationAccess,
             ErrorCode::IncompatibleNodeSubstitution(_, _, _)
             | ErrorCode::IncompatibleValueSubstitution(_, _, _) => Category::ConfigurationMerge,
@@ -67,6 +71,7 @@ impl Display for ConfigurationError {
             ErrorCode::IoError(_) => {}
             ErrorCode::GenericError(_) => {}
             ErrorCode::SerdeError(_) => {}
+            ErrorCode::MissingValue => {}
         }
 
         unimplemented!()
@@ -92,5 +97,11 @@ impl From<std::io::Error> for ConfigurationError {
 impl From<ErrorCode> for ConfigurationError {
     fn from(e: ErrorCode) -> Self {
         ConfigurationError { inner: Box::new(e) }
+    }
+}
+
+impl de::Error for ConfigurationError {
+    fn custom<T>(msg : T)-> Self where T : Display {
+        ConfigurationError::from(ErrorCode::SerdeError(msg.to_string()))
     }
 }

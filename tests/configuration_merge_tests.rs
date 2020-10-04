@@ -1,4 +1,4 @@
-use configuration_rs::configuration::Configuration;
+use configuration_rs::configuration::ConfigurationRoot;
 use configuration_rs::key;
 
 #[test]
@@ -6,10 +6,10 @@ fn test_single_value_integer_config_merge_json() {
     let config_str_1 = "1";
     let config_str_2 = "2";
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
     assert_eq!(2, result.get_value::<isize>().unwrap().unwrap());
 }
@@ -19,12 +19,12 @@ fn test_single_map_entry_config_merge_json() {
     let config_str_1 = r#"{"value" : 1}"#;
     let config_str_2 = r#"{"value" : 2}"#;
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(2), result.drill_get(&key!("value")));
+    assert_eq!(Some(2), result.get(&key!("value")));
 }
 
 #[test]
@@ -32,10 +32,10 @@ fn test_single_map_entry_config_merge_json_wrong_type() {
     let config_str_1 = r#"{"value" : 1}"#;
     let config_str_2 = r#"{"value" : "2"}"#;
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2);
+    let result = ConfigurationRoot::merge(configuration1, configuration2);
 
     // assert_eq!(
     //     ConfigurationMergeError::IncompatibleValueSubstitution,
@@ -48,13 +48,13 @@ fn test_two_map_entries_config_merge_json() {
     let config_str_1 = r#"{"value1" : 1}"#;
     let config_str_2 = r#"{"value2" : 2}"#;
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(1), result.drill_get::<i8>(&key!("value1")));
-    assert_eq!(Some(2), result.drill_get::<i8>(&key!("value2")));
+    assert_eq!(Some(1), result.get::<i8>(&key!("value1")));
+    assert_eq!(Some(2), result.get::<i8>(&key!("value2")));
 }
 
 #[test]
@@ -62,12 +62,12 @@ fn test_single_array_entry_config_merge_json() {
     let config_str_1 = r#"[1]"#;
     let config_str_2 = r#"[2]"#;
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(2), result.drill_get(&key!(0u8)));
+    assert_eq!(Some(2), result.get(&key!(0u8)));
 }
 
 #[test]
@@ -109,23 +109,23 @@ fn test_complex_map_config_merge_json() {
     "#
     .trim();
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some("Andrew".to_string()), result.drill_get(&key!("firstName")));
-    assert_eq!(Some("Smith".to_string()), result.drill_get(&key!("lastName")));
-    assert_eq!(Some(false), result.drill_get(&key!("isAlive")));
+    assert_eq!(Some("Andrew".to_string()), result.get(&key!("firstName")));
+    assert_eq!(Some("Smith".to_string()), result.get(&key!("lastName")));
+    assert_eq!(Some(false), result.get(&key!("isAlive")));
     assert_eq!(
         Some("Knowhere".to_string()),
-        result.drill_get(&key!("address", "streetAddress"))
+        result.get(&key!("address", "streetAddress"))
     );
     assert_eq!(
         Some("work".to_string()),
-        result.drill_get(&key!("phoneNumbers", 0u32, "type"))
+        result.get(&key!("phoneNumbers", 0u32, "type"))
     );
-    assert_eq!(Some(true), result.drill_get(&key!("spouse")));
+    assert_eq!(Some(true), result.get(&key!("spouse")));
 }
 
 #[test]
@@ -149,11 +149,11 @@ fn test_array_config_merge_json() {
     "#
     .trim();
 
-    let configuration1 = serde_json::from_str::<Configuration>(&config_str_1).unwrap();
-    let configuration2 = serde_json::from_str::<Configuration>(&config_str_2).unwrap();
+    let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
+    let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = Configuration::merge(configuration1, configuration2).unwrap();
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    assert_eq!(Some(12), result.drill_get(&key!("array", 0u8, "k")));
-    assert_eq!(None, result.drill_get::<i32>(&key!("array", 1u8, "k")));
+    assert_eq!(Some(12), result.get(&key!("array", 0u8, "k")));
+    assert_eq!(None, result.get::<i32>(&key!("array", 1u8, "k")));
 }

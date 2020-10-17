@@ -3,11 +3,16 @@ use crate::{
     error::{ConfigurationError, ErrorCode},
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, convert::{TryFrom, TryInto}, fmt::Display, default::Default};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    default::Default,
+    fmt::Display,
+};
 
 #[derive(Debug)]
 pub struct Configuration {
-    roots : Vec<ConfigurationRoot>
+    pub(crate) roots: Vec<ConfigurationRoot>,
 }
 
 impl Configuration {
@@ -17,23 +22,21 @@ impl Configuration {
     {
         for root in self.roots.iter().rev() {
             if let v @ Some(_) = root.get::<T>(keys) {
-                return v
+                return v;
             }
         }
 
         None
     }
 
-    pub fn add_root(&mut self, root : ConfigurationRoot) {
+    pub fn add_root(&mut self, root: ConfigurationRoot) {
         self.roots.push(root);
     }
 }
 
 impl Configuration {
     pub fn new() -> Self {
-        Configuration {
-            roots : Vec::new()
-        }
+        Configuration { roots: Vec::new() }
     }
 }
 
@@ -144,6 +147,10 @@ impl ConfigurationRoot {
         }
     }
 
+    pub fn try_into<'de, T: Deserialize<'de>>(&'de self) -> Result<T, ConfigurationError> {
+        T::deserialize(self)
+    }
+
     // MERGING //
 
     pub fn merge(
@@ -152,9 +159,9 @@ impl ConfigurationRoot {
     ) -> Result<ConfigurationRoot, ConfigurationError> {
         match (previous, next) {
             (_, vn @ ConfigurationRoot::Value(_)) => Ok(vn),
-            (ConfigurationRoot::Map(mp), ConfigurationRoot::Map(mn)) => {
-                Ok(ConfigurationRoot::Map(ConfigurationRoot::merge_maps(mp, mn)?))
-            }
+            (ConfigurationRoot::Map(mp), ConfigurationRoot::Map(mn)) => Ok(ConfigurationRoot::Map(
+                ConfigurationRoot::merge_maps(mp, mn)?,
+            )),
             (ConfigurationRoot::Array(_), nn @ ConfigurationRoot::Array(_)) => Ok(nn),
             (vp, vm) => {
                 Err(
@@ -179,7 +186,10 @@ impl ConfigurationRoot {
                         previous.insert(key, vn);
                     }
                     (ConfigurationRoot::Map(mp), ConfigurationRoot::Map(mn)) => {
-                        previous.insert(key, ConfigurationRoot::Map(ConfigurationRoot::merge_maps(mp, mn)?));
+                        previous.insert(
+                            key,
+                            ConfigurationRoot::Map(ConfigurationRoot::merge_maps(mp, mn)?),
+                        );
                     }
                     (ConfigurationRoot::Array(mut vp), ConfigurationRoot::Array(mut vn)) => {
                         if vp.len() > vn.len() {
@@ -211,7 +221,7 @@ macro_rules! try_from_for {
     ($($t:ty),*) => {
         $(impl TryFrom<&ConfigurationRoot> for $t {
             type Error = ConfigurationError;
-        
+
             fn try_from(value: &ConfigurationRoot) -> Result<Self, Self::Error> {
                 match value {
                     ConfigurationRoot::Value(Some(tv)) => tv.try_into(),

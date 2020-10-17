@@ -1,6 +1,6 @@
 use crate::configuration::{Key, NodeType};
-use std::{convert::From, fmt::Display};
 use serde::de;
+use std::{convert::From, fmt::Display};
 
 // TODO: Add Locaction, a Vec<Key> to mark place where error occured
 #[derive(Debug)]
@@ -30,7 +30,7 @@ pub enum ErrorCode {
     IoError(std::io::Error),
     GenericError(Box<dyn std::error::Error>),
     SerdeError(String),
-    MissingValue
+    MissingValue,
 }
 
 impl ConfigurationError {
@@ -101,7 +101,10 @@ impl From<ErrorCode> for ConfigurationError {
 }
 
 impl de::Error for ConfigurationError {
-    fn custom<T>(msg : T)-> Self where T : Display {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
         ConfigurationError::from(ErrorCode::SerdeError(msg.to_string()))
     }
 }

@@ -6,7 +6,6 @@ mod yaml;
 pub use json::JsonDeserializer;
 pub use yaml::YamlDeserializer;
 
-
 pub trait ConfigurationDeserializer {
     fn deserialize(&self, input: String) -> Result<ConfigurationRoot, ConfigurationError>;
 }

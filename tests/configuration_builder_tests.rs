@@ -1,30 +1,36 @@
 mod utils;
 
 use configuration_rs::{
-    builder::ConfigurationBuilder,
-    format::JsonDeserializer,
-    key,
-    source::InMemorySource,
+    builder::ConfigurationBuilder, format::JsonDeserializer, key, source::InMemorySource,
 };
 use rstest::rstest;
 
-
-#[rstest(json1, json2, exp,
-    case(r#"{"array1" : [1,2,3,4]}"#, r#"{"array1" : [4,5]}"#, r#"{"array1":[4,5,3,4]}"#),
-    case(r#"{"array1" : [1,2]}"#, r#"{"array1" : [4,5,6]}"#, r#"{"array1":[4,5,6]}"#),
+#[rstest(
+    json1,
+    json2,
+    exp,
+    case(
+        r#"{"array1" : [1,2,3,4]}"#,
+        r#"{"array1" : [4,5]}"#,
+        r#"{"array1":[4,5,3,4]}"#
+    ),
+    case(
+        r#"{"array1" : [1,2]}"#,
+        r#"{"array1" : [4,5,6]}"#,
+        r#"{"array1":[4,5,6]}"#
+    )
 )]
 
-fn test_arrays_are_merged_when_substituted(json1 : &str, json2: &str, exp : &str)
-{
+fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: &str) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
         InMemorySource::from_str(json1.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
     builder.add(
         InMemorySource::from_str(json2.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
 
     let confiuration = builder.build().unwrap();
@@ -41,19 +47,18 @@ fn test_arrays_are_merged_when_substituted(json1 : &str, json2: &str, exp : &str
     case(r#"{"value1" : 1}"#, r#"{"value1" : 2}"#, 2),
     case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1}"#, 1),
     case(r#"{"value1" : false}"#, r#"{"value1" : 3}"#, 3),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : 4}"#, 4),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : 4}"#, 4)
 )]
-fn test_type_to_integer_substitution(c1: &str, c2: &str, exp : isize)
-{
+fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
         InMemorySource::from_str(c1.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
     builder.add(
         InMemorySource::from_str(c2.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
 
     let result = builder.build();
@@ -72,19 +77,18 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp : isize)
     case(r#"{"value1" : 1}"#, r#"{"value1" : 2.1}"#, 2.1f64),
     case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1.1}"#, 1.1f64),
     case(r#"{"value1" : false}"#, r#"{"value1" : 3.1}"#, 3.1f64),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : 4.1}"#, 4.1f64),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : 4.1}"#, 4.1f64)
 )]
-fn test_type_to_float_substitution(c1: &str, c2: &str, exp : f64)
-{
+fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
         InMemorySource::from_str(c1.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
     builder.add(
         InMemorySource::from_str(c2.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
 
     let result = builder.build();
@@ -103,19 +107,18 @@ fn test_type_to_float_substitution(c1: &str, c2: &str, exp : f64)
     case(r#"{"value1" : 1}"#, r#"{"value1" : true}"#, true),
     case(r#"{"value1" : 1.2}"#, r#"{"value1" : true}"#, true),
     case(r#"{"value1" : false}"#, r#"{"value1" : true}"#, true),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : false}"#, false),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : false}"#, false)
 )]
-fn test_type_to_bool_substitution(c1: &str, c2: &str, exp : bool)
-{
+fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
         InMemorySource::from_str(c1.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
     builder.add(
         InMemorySource::from_str(c2.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
 
     let result = builder.build();
@@ -134,19 +137,18 @@ fn test_type_to_bool_substitution(c1: &str, c2: &str, exp : bool)
     case(r#"{"value1" : 1}"#, r#"{"value1" : "true"}"#, "true"),
     case(r#"{"value1" : 1.2}"#, r#"{"value1" : "true"}"#, "true"),
     case(r#"{"value1" : false}"#, r#"{"value1" : "true"}"#, "true"),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : "false"}"#, "false"),
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : "false"}"#, "false")
 )]
-fn test_type_to_string_substitution(c1: &str, c2: &str, exp : &str)
-{
+fn test_type_to_string_substitution(c1: &str, c2: &str, exp: &str) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
         InMemorySource::from_str(c1.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
     builder.add(
         InMemorySource::from_str(c2.as_ref()),
-        JsonDeserializer::new()
+        JsonDeserializer::new(),
     );
 
     let result = builder.build();

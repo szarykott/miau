@@ -1,7 +1,7 @@
 use crate::{
     configuration::ConfigurationRoot,
-    format::ConfigurationDeserializer,
     error::{ConfigurationError, ErrorCode},
+    format::ConfigurationDeserializer,
 };
 use std::default::Default;
 

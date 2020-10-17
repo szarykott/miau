@@ -1,7 +1,7 @@
 use crate::{
     configuration::Configuration,
-    format::ConfigurationDeserializer,
     error::ConfigurationError,
+    format::ConfigurationDeserializer,
     source::{AsyncSource, Source},
 };
 

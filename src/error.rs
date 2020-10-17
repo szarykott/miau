@@ -2,10 +2,15 @@ use crate::configuration::{Key, NodeType};
 use serde::de;
 use std::{convert::From, fmt::Display};
 
-// TODO: Add Locaction, a Vec<Key> to mark place where error occured
 #[derive(Debug)]
 pub struct ConfigurationError {
-    inner: Box<ErrorCode>,
+    inner: Box<ErrorImpl>,
+}
+
+#[derive(Debug)]
+struct ErrorImpl {
+    code: ErrorCode,
+    path: Vec<Key>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -35,7 +40,7 @@ pub enum ErrorCode {
 
 impl ConfigurationError {
     pub fn category(&self) -> Category {
-        match self.inner.as_ref() {
+        match self.inner.code {
             ErrorCode::UnexpectedNodeType(_, _, _)
             | ErrorCode::UnexpectedValueType(_, _)
             | ErrorCode::IndexOutOfRange(_, _)
@@ -51,14 +56,19 @@ impl ConfigurationError {
     }
 
     pub fn inner(&self) -> &ErrorCode {
-        self.inner.as_ref()
+        &self.inner.code
+    }
+
+    pub fn enrich_with_key(mut self, key: Key) -> Self {
+        self.inner.path.push(key);
+        self
     }
 }
 
 // TODO: Finish implementing Error display
 impl Display for ConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.inner.as_ref() {
+        match &self.inner.code {
             ErrorCode::UnexpectedNodeType(k, exp, act) => {
                 write!(f, "Expected {}, found {} at {:?}.", exp, act, k);
             } //TODO: Non debug display
@@ -74,13 +84,13 @@ impl Display for ConfigurationError {
             ErrorCode::MissingValue => {}
         }
 
-        unimplemented!()
+        write!(f, "Path : {:?}", self.inner.path)
     }
 }
 
 impl std::error::Error for ConfigurationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self.inner.as_ref() {
+        match self.inner.code {
             ErrorCode::IoError(ref e) => Some(e),
             ErrorCode::GenericError(ref e) => Some(e.as_ref()),
             _ => None,
@@ -96,7 +106,12 @@ impl From<std::io::Error> for ConfigurationError {
 
 impl From<ErrorCode> for ConfigurationError {
     fn from(e: ErrorCode) -> Self {
-        ConfigurationError { inner: Box::new(e) }
+        ConfigurationError {
+            inner: Box::new(ErrorImpl {
+                code: e,
+                path: Vec::new(),
+            }),
+        }
     }
 }
 

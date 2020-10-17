@@ -8,8 +8,8 @@ use std::fmt;
 pub enum TypedValue {
     String(String),
     Bool(bool),
-    Float(f64),
     SignedInteger(i64),
+    Float(f64),
 }
 
 impl fmt::Display for TypedValue {
@@ -120,5 +120,16 @@ impl TryFrom<&TypedValue> for String {
             TypedValue::SignedInteger(v) => v.to_string(),
             TypedValue::Float(v) => v.to_string(),
         })
+    }
+}
+
+impl<'conf> TryFrom<&'conf TypedValue> for &'conf str {
+    type Error = ConfigurationError;
+
+    fn try_from(value: &'conf TypedValue) -> Result<Self, Self::Error> {
+        match value {
+            TypedValue::String(v) => Ok(v.as_str()),
+            _ => Err(ErrorCode::UnexpectedValueType("".into(), "".into()).into()),
+        }
     }
 }

@@ -12,7 +12,7 @@ use std::{
 
 #[derive(Debug)]
 pub struct Configuration {
-    pub(crate) roots: Vec<ConfigurationRoot>,
+    roots: Vec<ConfigurationRoot>,
 }
 
 impl Configuration {
@@ -235,3 +235,20 @@ macro_rules! try_from_for {
 }
 
 try_from_for!(i8, i16, i32, i64, isize, f32, f64, bool, String);
+
+impl<'conf> TryFrom<&'conf ConfigurationRoot> for &'conf str {
+    type Error = ConfigurationError;
+
+    fn try_from(value: &'conf ConfigurationRoot) -> Result<Self, Self::Error> {
+        match value {
+            ConfigurationRoot::Value(Some(tv)) => tv.try_into(),
+            ConfigurationRoot::Value(None) => Err(ErrorCode::MissingValue.into()),
+            ConfigurationRoot::Map(_) => {
+                Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Map).into())
+            }
+            ConfigurationRoot::Array(_) => {
+                Err(ErrorCode::UnexpectedNodeType(None, NodeType::Value, NodeType::Array).into())
+            }
+        }
+    }
+}

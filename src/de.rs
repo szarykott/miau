@@ -1,18 +1,22 @@
 use crate::{
-    configuration::{ConfigurationRoot, TypedValue},
+    configuration::{ConfigurationRoot, Key, TypedValue},
     error::{ConfigurationError, ErrorCode},
 };
 use serde::{
-    de::{self, DeserializeSeed, EnumAccess, MapAccess, SeqAccess, VariantAccess, Visitor},
+    de::{
+        self, value::StrDeserializer, DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess,
+        SeqAccess, VariantAccess, Visitor,
+    },
     forward_to_deserialize_any,
 };
 use std::{
     collections::hash_map::{Keys, Values},
     convert::TryInto,
+    iter::{Enumerate, Peekable},
     slice::Iter,
 };
 
-impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
+impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
     type Error = ConfigurationError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -27,8 +31,10 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
                 Some(TypedValue::Bool(v)) => visitor.visit_bool(*v),
                 None => visitor.visit_none(),
             },
-            ConfigurationRoot::Map(m) => visitor.visit_map(MapAccessor(m.keys(), m.values())),
-            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter())),
+            ConfigurationRoot::Map(m) => {
+                visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
+            }
+            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
         }
     }
 
@@ -36,89 +42,92 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_bool(self.try_into()?)
+        visitor.visit_bool(TryInto::try_into(self)?)
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i8(self.try_into()?)
+        visitor.visit_i8(TryInto::try_into(self)?)
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i16(self.try_into()?)
+        visitor.visit_i16(TryInto::try_into(self)?)
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i32(self.try_into()?)
+        visitor.visit_i32(TryInto::try_into(self)?)
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i64(self.try_into()?)
+        visitor.visit_i64(TryInto::try_into(self)?)
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i8(self.try_into()?)
+        visitor.visit_i8(TryInto::try_into(self)?)
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i16(self.try_into()?)
+        visitor.visit_i16(TryInto::try_into(self)?)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i32(self.try_into()?)
+        visitor.visit_i32(TryInto::try_into(self)?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_i64(self.try_into()?)
+        visitor.visit_i64(TryInto::try_into(self)?)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_f32(self.try_into()?)
+        visitor.visit_f32(TryInto::try_into(self)?)
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_f64(self.try_into()?)
+        visitor.visit_f64(TryInto::try_into(self)?)
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        let self_string: String = self.try_into()?;
+        let self_string: String = TryInto::try_into(self)?;
         let characters: Vec<char> = self_string.chars().collect();
         if characters.len() == 1 {
             visitor.visit_char(characters[0])
         } else {
-            Err(ErrorCode::SerdeError("".into()).into()) // TODO: Fix this
+            Err(ErrorCode::SerdeError(
+                "Expected string to have length 1 to deserialize as char.".into(),
+            )
+            .into()) // TODO: Fix this
         }
     }
 
@@ -126,14 +135,14 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_string(self.try_into()?)
+        visitor.visit_borrowed_str(TryInto::try_into(self)?)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_string(self.try_into()?)
+        visitor.visit_str(TryInto::try_into(self)?)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -143,7 +152,10 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
         match self {
             ConfigurationRoot::Value(Some(_)) => visitor.visit_some(self),
             ConfigurationRoot::Value(None) => visitor.visit_none(),
-            _ => Err(ErrorCode::SerdeError("".into()).into()), // TODO: Fix this
+            _ => Err(
+                ErrorCode::SerdeError("Expected value to deserialize optional value.".into())
+                    .into(),
+            ), // TODO: Fix this
         }
     }
 
@@ -152,8 +164,18 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
         V: Visitor<'de>,
     {
         match self {
+            ConfigurationRoot::Value(Some(TypedValue::String(s))) => {
+                if s.trim().is_empty() {
+                    visitor.visit_unit()
+                } else {
+                    Err(ErrorCode::SerdeError(
+                        "Expected string to be empty or whitespace to deserialize unit".into(),
+                    )
+                    .into())
+                }
+            }
             ConfigurationRoot::Value(None) => visitor.visit_unit(),
-            _ => Err(ErrorCode::SerdeError("".into()).into()), // TODO: Fix this
+            _ => Err(ErrorCode::SerdeError("Expected None to deserialize unit".into()).into()), // TODO: Fix this
         }
     }
 
@@ -188,35 +210,34 @@ impl<'de> de::Deserializer<'de> for &ConfigurationRoot {
     where
         V: Visitor<'de>,
     {
-        match self {
-            m @ ConfigurationRoot::Map(_) => visitor.visit_enum(EnumAccessor {
-                enum_name: name,
-                root: m,
-            }),
-            _ => Err(ErrorCode::SerdeError("".into()).into()), // TODO: Fix it
-        }
+        visitor.visit_enum(EnumAccessor {
+            enum_name: name,
+            root: self,
+        })
     }
 
     forward_to_deserialize_any!(bytes byte_buf seq map tuple tuple_struct struct identifier ignored_any);
 }
 
 struct MapAccessor<'conf>(
-    Keys<'conf, String, ConfigurationRoot>,
+    Peekable<Keys<'conf, String, ConfigurationRoot>>,
     Values<'conf, String, ConfigurationRoot>,
 );
 
-impl<'de, 'conf> MapAccess<'de> for MapAccessor<'conf> {
+impl<'de> MapAccess<'de> for MapAccessor<'de> {
     type Error = ConfigurationError;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
         K: DeserializeSeed<'de>,
     {
-        match self.0.next() {
+        match self.0.peek() {
             Some(v) => {
-                let key = seed.deserialize(&ConfigurationRoot::Value(Some(TypedValue::String(
-                    v.clone(),
-                ))))?;
+                let deserializer: StrDeserializer<ConfigurationError> =
+                    v.as_str().into_deserializer();
+                let key = seed
+                    .deserialize(deserializer)
+                    .map_err(|e| e.enrich_with_key(Key::Map((*v).to_owned())))?;
                 Ok(Some(key))
             }
             None => Ok(None),
@@ -227,16 +248,31 @@ impl<'de, 'conf> MapAccess<'de> for MapAccessor<'conf> {
     where
         V: DeserializeSeed<'de>,
     {
+        let key = self.0.next();
+        if let None = key {
+            return Err(ErrorCode::SerdeError(
+                "Unknown key in map while deserializing value".into(),
+            )
+            .into());
+        }
+
+        let key = key.unwrap();
+
         match self.1.next() {
-            Some(v) => Ok(seed.deserialize(v)?),
-            None => Err(ErrorCode::SerdeError("".into()).into()), // TODO: Fix it
+            Some(v) => Ok(seed
+                .deserialize(v)
+                .map_err(|e| e.enrich_with_key(Key::Map(key.to_owned())))?),
+            None => Err(ErrorCode::SerdeError(
+                "Expected value to be Some for next map entry".into(),
+            )
+            .into()), // TODO: Fix it
         }
     }
 }
 
-struct SeqAccessor<'conf>(Iter<'conf, ConfigurationRoot>);
+struct SeqAccessor<'conf>(Enumerate<Iter<'conf, ConfigurationRoot>>);
 
-impl<'de, 'conf> SeqAccess<'de> for SeqAccessor<'conf> {
+impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
     type Error = ConfigurationError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
@@ -244,7 +280,10 @@ impl<'de, 'conf> SeqAccess<'de> for SeqAccessor<'conf> {
         T: DeserializeSeed<'de>,
     {
         match self.0.next() {
-            Some(v) => Ok(Some(seed.deserialize(v)?)),
+            Some((index, v)) => Ok(Some(
+                seed.deserialize(v)
+                    .map_err(|e| e.enrich_with_key(Key::Array(index)))?,
+            )),
             None => Ok(None),
         }
     }
@@ -255,7 +294,7 @@ struct EnumAccessor<'conf> {
     root: &'conf ConfigurationRoot,
 }
 
-impl<'de, 'conf> EnumAccess<'de> for EnumAccessor<'conf> {
+impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
     type Error = ConfigurationError;
     type Variant = Self;
 
@@ -264,22 +303,35 @@ impl<'de, 'conf> EnumAccess<'de> for EnumAccessor<'conf> {
         V: DeserializeSeed<'de>,
     {
         match self.root {
+            ConfigurationRoot::Value(Some(TypedValue::String(v))) => {
+                let deserializer: StrDeserializer<ConfigurationError> =
+                    v.as_str().into_deserializer();
+                let value = seed.deserialize(deserializer)?;
+
+                Ok((value, self))
+            }
             ConfigurationRoot::Map(m) => {
                 if m.len() != 1 {
-                    // TODO: Fix it
-                    panic!()
+                    return Err(ErrorCode::SerdeError(
+                        "Attempt to deserialize enum from map longer than 1.".into(),
+                    )
+                    .into());
                 }
 
-                if !m.contains_key(self.enum_name) {
-                    // TODO: Fix it
-                    panic!()
-                }
+                // if !m.contains_key(self.enum_name) {
+                //     return Err(ErrorCode::SerdeError(format!(
+                //         "Map does not contain key {} required by enum deserializer.",
+                //         self.enum_name
+                //     ))
+                //     .into());
+                // }
 
-                let value = seed.deserialize(&ConfigurationRoot::Value(Some(
-                    TypedValue::String(self.enum_name.to_owned()),
-                )))?;
+                let key = m.keys().nth(0).unwrap().as_str();
+                let deserializer: StrDeserializer<ConfigurationError> = key.into_deserializer();
 
-                self.root = m.get(self.enum_name).unwrap(); // safe due to previous check;
+                let value = seed.deserialize(deserializer)?;
+
+                self.root = m.get(key).unwrap(); // safe due to previous check;
 
                 Ok((value, self))
             }
@@ -288,7 +340,7 @@ impl<'de, 'conf> EnumAccess<'de> for EnumAccessor<'conf> {
     }
 }
 
-impl<'de, 'conf> VariantAccess<'de> for EnumAccessor<'conf> {
+impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
     type Error = ConfigurationError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {
@@ -310,7 +362,7 @@ impl<'de, 'conf> VariantAccess<'de> for EnumAccessor<'conf> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter())),
+            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
             _ => Err(ErrorCode::SerdeError("".into()).into()),
         }
     }
@@ -324,7 +376,9 @@ impl<'de, 'conf> VariantAccess<'de> for EnumAccessor<'conf> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationRoot::Map(m) => visitor.visit_map(MapAccessor(m.keys(), m.values())),
+            ConfigurationRoot::Map(m) => {
+                visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
+            }
             _ => Err(ErrorCode::SerdeError("".into()).into()),
         }
     }

@@ -1,11 +1,11 @@
 use crate::{
     configuration::{ConfigurationRoot, Key, TypedValue},
-    error::{ConfigurationError, ErrorCode},
+    error::ConfigurationError,
 };
 use serde::{
     de::{
-        self, value::StrDeserializer, DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess,
-        SeqAccess, VariantAccess, Visitor,
+        self, value::StrDeserializer, DeserializeSeed, EnumAccess, Error, IntoDeserializer,
+        MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
     },
     forward_to_deserialize_any,
 };
@@ -124,10 +124,10 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
         if characters.len() == 1 {
             visitor.visit_char(characters[0])
         } else {
-            Err(ErrorCode::SerdeError(
-                "Expected string to have length 1 to deserialize as char.".into(),
-            )
-            .into()) // TODO: Fix this
+            Err(Error::invalid_length(
+                characters.len(),
+                &"string of length 1",
+            ))
         }
     }
 
@@ -152,10 +152,10 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
         match self {
             ConfigurationRoot::Value(Some(_)) => visitor.visit_some(self),
             ConfigurationRoot::Value(None) => visitor.visit_none(),
-            _ => Err(
-                ErrorCode::SerdeError("Expected value to deserialize optional value.".into())
-                    .into(),
-            ), // TODO: Fix this
+            cr => Err(Error::invalid_type(
+                Unexpected::Other(&cr.node_type().to_string()),
+                &"value",
+            )),
         }
     }
 
@@ -168,14 +168,20 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
                 if s.trim().is_empty() {
                     visitor.visit_unit()
                 } else {
-                    Err(ErrorCode::SerdeError(
-                        "Expected string to be empty or whitespace to deserialize unit".into(),
-                    )
-                    .into())
+                    Err(Error::custom(
+                        "value should be null or empty to deserialize unit",
+                    ))
                 }
             }
             ConfigurationRoot::Value(None) => visitor.visit_unit(),
-            _ => Err(ErrorCode::SerdeError("Expected None to deserialize unit".into()).into()), // TODO: Fix this
+            ConfigurationRoot::Value(_) => Err(Error::invalid_type(
+                Unexpected::Other("non empty value"),
+                &"null or empty value",
+            )),
+            cr => Err(Error::invalid_type(
+                Unexpected::Other(&cr.node_type().to_string()),
+                &"null or empty value",
+            )),
         }
     }
 
@@ -203,17 +209,14 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
 
     fn deserialize_enum<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_enum(EnumAccessor {
-            enum_name: name,
-            root: self,
-        })
+        visitor.visit_enum(EnumAccessor { root: self })
     }
 
     forward_to_deserialize_any!(bytes byte_buf seq map tuple tuple_struct struct identifier ignored_any);
@@ -250,10 +253,9 @@ impl<'de> MapAccess<'de> for MapAccessor<'de> {
     {
         let key = self.0.next();
         if let None = key {
-            return Err(ErrorCode::SerdeError(
-                "Unknown key in map while deserializing value".into(),
-            )
-            .into());
+            return Err(Error::custom(
+                "missing key corresponding to value being deserialized in a map",
+            ));
         }
 
         let key = key.unwrap();
@@ -262,10 +264,10 @@ impl<'de> MapAccess<'de> for MapAccessor<'de> {
             Some(v) => Ok(seed
                 .deserialize(v)
                 .map_err(|e| e.enrich_with_key(Key::Map(key.to_owned())))?),
-            None => Err(ErrorCode::SerdeError(
-                "Expected value to be Some for next map entry".into(),
-            )
-            .into()), // TODO: Fix it
+            None => Err(Error::custom(format!(
+                "missing value corresponding to a key {} in a map",
+                key
+            ))),
         }
     }
 }
@@ -290,7 +292,6 @@ impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
 }
 
 struct EnumAccessor<'conf> {
-    enum_name: &'static str,
     root: &'conf ConfigurationRoot,
 }
 
@@ -310,32 +311,26 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
 
                 Ok((value, self))
             }
+            ConfigurationRoot::Value(_) => Err(Error::custom(
+                "expected string or single key map, got other value type",
+            )),
             ConfigurationRoot::Map(m) => {
                 if m.len() != 1 {
-                    return Err(ErrorCode::SerdeError(
-                        "Attempt to deserialize enum from map longer than 1.".into(),
-                    )
-                    .into());
+                    return Err(Error::invalid_length(m.len(), &"expected map of length 1"));
                 }
-
-                // if !m.contains_key(self.enum_name) {
-                //     return Err(ErrorCode::SerdeError(format!(
-                //         "Map does not contain key {} required by enum deserializer.",
-                //         self.enum_name
-                //     ))
-                //     .into());
-                // }
 
                 let key = m.keys().nth(0).unwrap().as_str();
                 let deserializer: StrDeserializer<ConfigurationError> = key.into_deserializer();
-
                 let value = seed.deserialize(deserializer)?;
 
                 self.root = m.get(key).unwrap(); // safe due to previous check;
 
                 Ok((value, self))
             }
-            _ => Err(ErrorCode::SerdeError("".into()).into()), // TODO: Fix it
+            ConfigurationRoot::Array(_) => Err(Error::invalid_type(
+                Unexpected::Seq,
+                &"expected string or single key map",
+            )),
         }
     }
 }
@@ -353,7 +348,10 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
     {
         match self.root {
             ConfigurationRoot::Value(Some(tv)) => seed.deserialize(tv),
-            _ => Err(ErrorCode::SerdeError("".into()).into()),
+            cr => Err(Error::custom(format!(
+                "expected value, got {}",
+                cr.node_type(),
+            ))),
         }
     }
 
@@ -363,7 +361,10 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
     {
         match self.root {
             ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
-            _ => Err(ErrorCode::SerdeError("".into()).into()),
+            cr => Err(Error::custom(format!(
+                "expected array, got {}",
+                cr.node_type(),
+            ))),
         }
     }
 
@@ -379,7 +380,10 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
             ConfigurationRoot::Map(m) => {
                 visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
             }
-            _ => Err(ErrorCode::SerdeError("".into()).into()),
+            cr => Err(Error::custom(format!(
+                "expected map, got {}",
+                cr.node_type(),
+            ))),
         }
     }
 }

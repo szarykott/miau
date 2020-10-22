@@ -35,12 +35,9 @@ fn test_single_map_entry_config_merge_json_wrong_type() {
     let configuration1 = serde_json::from_str::<ConfigurationRoot>(&config_str_1).unwrap();
     let configuration2 = serde_json::from_str::<ConfigurationRoot>(&config_str_2).unwrap();
 
-    let result = ConfigurationRoot::merge(configuration1, configuration2);
+    let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
-    // assert_eq!(
-    //     ConfigurationMergeError::IncompatibleValueSubstitution,
-    //     result.unwrap_err()
-    // );
+    assert_eq!(Some("2".to_string()), result.get(&key!("value")))
 }
 
 #[test]
@@ -155,5 +152,5 @@ fn test_array_config_merge_json() {
     let result = ConfigurationRoot::merge(configuration1, configuration2).unwrap();
 
     assert_eq!(Some(12), result.get(&key!("array", 0u8, "k")));
-    assert_eq!(None, result.get::<i32>(&key!("array", 1u8, "k")));
+    assert_eq!(Some(33), result.get::<i32>(&key!("array", 1u8, "k")));
 }

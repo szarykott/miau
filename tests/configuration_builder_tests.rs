@@ -4,6 +4,7 @@ use configuration_rs::{
     builder::ConfigurationBuilder, format::JsonDeserializer, key, source::InMemorySource,
 };
 use rstest::rstest;
+use std::collections::HashMap;
 
 #[rstest(
     json1,
@@ -12,16 +13,16 @@ use rstest::rstest;
     case(
         r#"{"array1" : [1,2,3,4]}"#,
         r#"{"array1" : [4,5]}"#,
-        r#"{"array1":[4,5,3,4]}"#
+        vec![4, 5, 3, 4]
     ),
     case(
         r#"{"array1" : [1,2]}"#,
         r#"{"array1" : [4,5,6]}"#,
-        r#"{"array1":[4,5,6]}"#
+        vec![4, 5, 6]
     )
 )]
 
-fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: &str) {
+fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i32>) {
     let mut builder = ConfigurationBuilder::default();
 
     builder.add(
@@ -35,9 +36,11 @@ fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: &str) 
 
     let confiuration = builder.build().unwrap();
 
-    // let result = serde_json::to_string(&confiuration).unwrap();
+    let mut result = confiuration
+        .try_into::<HashMap<String, Vec<i32>>>()
+        .unwrap();
 
-    // assert_eq!(exp.to_string(), result); // TODO: Add a way to bind to arbitrary data structures
+    assert_eq!(exp, result.remove("array1".into()).unwrap());
 }
 
 #[rstest(

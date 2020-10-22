@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[test]
 fn test_deserialization_all_simple_types() {
     #[derive(Deserialize)]
-    struct Config<'a> {
+    struct Config {
         integer64: i64,
         integer32: i32,
         integer16: i16,
@@ -15,7 +15,6 @@ fn test_deserialization_all_simple_types() {
         uinteger8: u8,
         boolean: bool,
         string_owned: String,
-        str_ref: &'a str,
         float32: f32,
         float64: f64,
         unit: (),
@@ -53,7 +52,6 @@ fn test_deserialization_all_simple_types() {
     assert_eq!(7, config.uinteger8);
     assert_eq!(true, config.boolean);
     assert_eq!("owned".to_string(), config.string_owned);
-    assert_eq!("strref", config.str_ref);
     assert_eq!(1.1, config.float32);
     assert_eq!(1.2, config.float64);
     assert_eq!((), config.unit);

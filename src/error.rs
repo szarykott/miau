@@ -13,6 +13,17 @@ struct ErrorImpl {
     path: Vec<Key>,
 }
 
+struct KeyVec<'v>(&'v [Key]);
+
+impl<'v> Display for KeyVec<'v> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for key in self.0.iter() {
+            write!(f, " {} ", key)?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum Category {
     ConfigurationAccess,
@@ -22,16 +33,27 @@ pub enum Category {
     Other,
 }
 
-// TODO: Check if it can be done so that keys are not Option
+impl Display for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Category::ConfigurationAccess => write!(f, "configuration access"),
+            Category::ConfigurationMerge => write!(f, "configuration merge"),
+            Category::SourceCollection => write!(f, "source collection"),
+            Category::SourceDeserialization => write!(f, "source deserialization"),
+            Category::Other => write!(f, "other"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ErrorCode {
-    UnexpectedNodeType(Option<Key>, NodeType, NodeType),
+    UnexpectedNodeType(NodeType, NodeType),
     UnexpectedValueType(String, String),
-    IndexOutOfRange(Key, usize),
-    WrongKeyType(Key, String),
-    KeyNotFound(Key, String),
-    IncompatibleNodeSubstitution(Option<Key>, NodeType, NodeType),
-    IncompatibleValueSubstitution(Option<Key>, String, String),
+    IndexOutOfRange(usize),
+    WrongKeyType(String),
+    KeyNotFound(String),
+    IncompatibleNodeSubstitution(NodeType, NodeType),
+    IncompatibleValueSubstitution(String, String),
     IoError(std::io::Error),
     GenericError(Box<dyn std::error::Error>),
     SerdeError(String),
@@ -41,14 +63,14 @@ pub enum ErrorCode {
 impl ConfigurationError {
     pub fn category(&self) -> Category {
         match self.inner.code {
-            ErrorCode::UnexpectedNodeType(_, _, _)
+            ErrorCode::UnexpectedNodeType(_, _)
             | ErrorCode::UnexpectedValueType(_, _)
-            | ErrorCode::IndexOutOfRange(_, _)
-            | ErrorCode::WrongKeyType(_, _)
+            | ErrorCode::IndexOutOfRange(_)
+            | ErrorCode::WrongKeyType(_)
             | ErrorCode::MissingValue
-            | ErrorCode::KeyNotFound(_, _) => Category::ConfigurationAccess,
-            ErrorCode::IncompatibleNodeSubstitution(_, _, _)
-            | ErrorCode::IncompatibleValueSubstitution(_, _, _) => Category::ConfigurationMerge,
+            | ErrorCode::KeyNotFound(_) => Category::ConfigurationAccess,
+            ErrorCode::IncompatibleNodeSubstitution(_, _)
+            | ErrorCode::IncompatibleValueSubstitution(_, _) => Category::ConfigurationMerge,
             ErrorCode::IoError(_) => Category::SourceCollection,
             ErrorCode::SerdeError(_) => Category::SourceDeserialization,
             ErrorCode::GenericError(_) => Category::Other,
@@ -65,26 +87,42 @@ impl ConfigurationError {
     }
 }
 
-// TODO: Finish implementing Error display
 impl Display for ConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.inner.code {
-            ErrorCode::UnexpectedNodeType(k, exp, act) => {
-                write!(f, "Expected {}, found {} at {:?}.", exp, act, k);
-            } //TODO: Non debug display
-            ErrorCode::UnexpectedValueType(_, _) => {}
-            ErrorCode::IndexOutOfRange(_, _) => {}
-            ErrorCode::WrongKeyType(_, _) => {}
-            ErrorCode::KeyNotFound(_, _) => {}
-            ErrorCode::IncompatibleNodeSubstitution(_, _, _) => {}
-            ErrorCode::IncompatibleValueSubstitution(_, _, _) => {}
-            ErrorCode::IoError(_) => {}
-            ErrorCode::GenericError(_) => {}
-            ErrorCode::SerdeError(_) => {}
-            ErrorCode::MissingValue => {}
+        write!(f, "Error category : {}, ", self.category())?;
+
+        match self.category() {
+            Category::ConfigurationAccess
+            | Category::ConfigurationMerge
+            | Category::SourceDeserialization => {
+                write!(f, "path : {}, ", KeyVec(&self.inner.path))?;
+            }
+            _ => {}
         }
 
-        write!(f, "Path : {:?}", self.inner.path)
+        match &self.inner.code {
+            ErrorCode::UnexpectedNodeType(exp, act) => {
+                write!(f, "unexpected node type. Expected {}, got {}.", exp, act)
+            }
+            ErrorCode::UnexpectedValueType(exp, act) => {
+                write!(f, "unexpected value type. Expected {}, got {}.", exp, act)
+            }
+            ErrorCode::IndexOutOfRange(i) => write!(f, "index {} exceeds bounds of the array.", i),
+            ErrorCode::WrongKeyType(k) => write!(f, "got key of wrong type. Got key {}.", k),
+            ErrorCode::KeyNotFound(k) => write!(f, "unable to find key {}.", k),
+            ErrorCode::IncompatibleNodeSubstitution(a, b) => {
+                write!(f, "it is forbidden to substitute {} for {}.", a, b)
+            }
+            ErrorCode::IncompatibleValueSubstitution(a, b) => {
+                write!(f, "it is forbidden to substitute {} for {}.", a, b)
+            }
+            ErrorCode::IoError(e) => write!(f, "IO error occurred. Error : {}.", e),
+            ErrorCode::GenericError(e) => write!(f, "an error occured : {}.", e),
+            ErrorCode::SerdeError(e) => {
+                write!(f, "serialization or deserialization error occured : {}.", e)
+            }
+            ErrorCode::MissingValue => write!(f, "missing a value."),
+        }
     }
 }
 

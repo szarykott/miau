@@ -37,6 +37,8 @@ fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i3
     let confiuration = builder.build().unwrap();
 
     let mut result = confiuration
+        .merge()
+        .unwrap()
         .try_into::<HashMap<String, Vec<i32>>>()
         .unwrap();
 

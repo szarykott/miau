@@ -15,56 +15,9 @@ pub struct Configuration {
     roots: Vec<ConfigurationRoot>,
 }
 
-impl Configuration {
-    pub fn get<'a, T>(&'a self, keys: &CompoundKey) -> Option<T>
-    where
-        T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
-    {
-        for root in self.roots.iter().rev() {
-            if let v @ Some(_) = root.get::<T>(keys) {
-                return v;
-            }
-        }
-
-        None
-    }
-
-    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
-        let result = self.merge()?;
-        ConfigurationRoot::try_into::<T>(&result.roots[0])
-    }
-
-    pub fn merge(mut self) -> Result<Configuration, ConfigurationError> {
-        let mut roots = self.roots.drain(..);
-        let result = roots.next();
-
-        match result {
-            Some(mut result) => {
-                for root in roots {
-                    result = ConfigurationRoot::merge(result, root)?;
-                }
-                self.roots = vec![result];
-                Ok(self)
-            }
-            None => Err(ErrorCode::MissingValue.into()),
-        }
-    }
-
-    pub(crate) fn add_root(&mut self, root: ConfigurationRoot) {
-        self.roots.push(root);
-    }
-}
-
-impl Configuration {
-    pub fn new() -> Self {
-        Configuration { roots: Vec::new() }
-    }
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Configuration::new()
-    }
+#[derive(Debug)]
+pub struct MergedConfiguration {
+    root: ConfigurationRoot,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -80,6 +33,47 @@ pub enum NodeType {
     Value,
     Map,
     Array,
+}
+
+impl Configuration {
+    pub fn get<'a, T>(&'a self, keys: &CompoundKey) -> Option<T>
+    where
+        T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
+    {
+        self.roots.iter().rev().find_map(|cr| cr.get::<T>(keys))
+    }
+
+    pub(crate) fn add_root(&mut self, root: ConfigurationRoot) {
+        self.roots.push(root);
+    }
+
+    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
+        let result = self.merge()?;
+        result.try_into()
+    }
+
+    pub fn merge(mut self) -> Result<MergedConfiguration, ConfigurationError> {
+        let mut roots = self.roots.drain(..);
+        let first = roots.next();
+        match first {
+            Some(cr) => roots
+                .try_fold(cr, |acc, next| ConfigurationRoot::merge(acc, next))
+                .map(|cr| MergedConfiguration { root: cr }),
+            None => Err(ErrorCode::MissingValue.into()),
+        }
+    }
+}
+
+impl Default for Configuration {
+    fn default() -> Self {
+        Configuration { roots: Vec::new() }
+    }
+}
+
+impl MergedConfiguration {
+    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
+        ConfigurationRoot::try_into::<T>(&self.root)
+    }
 }
 
 impl Display for NodeType {

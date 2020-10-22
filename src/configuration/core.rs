@@ -29,19 +29,25 @@ impl Configuration {
         None
     }
 
-    pub fn try_into<T: DeserializeOwned>(mut self) -> Result<T, ConfigurationError> {
+    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
+        let result = self.merge()?;
+        ConfigurationRoot::try_into::<T>(&result.roots[0])
+    }
+
+    pub fn merge(mut self) -> Result<Configuration, ConfigurationError> {
         let mut roots = self.roots.drain(..);
-        let first = roots.next();
-        if let None = first {
-            return Err(ErrorCode::MissingValue.into());
-        }
+        let result = roots.next();
 
-        let mut result = first.unwrap().clone();
-        for root in roots {
-            result = ConfigurationRoot::merge(result, root)?;
+        match result {
+            Some(mut result) => {
+                for root in roots {
+                    result = ConfigurationRoot::merge(result, root)?;
+                }
+                self.roots = vec![result];
+                Ok(self)
+            }
+            None => Err(ErrorCode::MissingValue.into()),
         }
-
-        ConfigurationRoot::try_into::<T>(&result)
     }
 
     pub(crate) fn add_root(&mut self, root: ConfigurationRoot) {

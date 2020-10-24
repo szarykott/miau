@@ -37,7 +37,7 @@ fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i3
     let confiuration = builder.build().unwrap();
 
     let mut result = confiuration
-        .merge()
+        .merge_owned()
         .unwrap()
         .try_into::<HashMap<String, Vec<i32>>>()
         .unwrap();
@@ -71,7 +71,7 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-    let value = result.get::<isize>(&key!("value1"));
+    let value = result.get_option::<isize>(&key!("value1"));
     assert_eq!(Some(exp), value);
 }
 
@@ -101,7 +101,7 @@ fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-    let value = result.get::<f64>(&key!("value1"));
+    let value = result.get_option::<f64>(&key!("value1"));
     assert_eq!(Some(exp), value);
 }
 
@@ -131,7 +131,7 @@ fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-    let value = result.get::<bool>(&key!("value1"));
+    let value = result.get_option::<bool>(&key!("value1"));
     assert_eq!(Some(exp), value);
 }
 
@@ -161,6 +161,6 @@ fn test_type_to_string_substitution(c1: &str, c2: &str, exp: &str) {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-    let value = result.get::<String>(&key!("value1"));
+    let value = result.get_option::<String>(&key!("value1"));
     assert_eq!(Some(exp.to_string()), value);
 }

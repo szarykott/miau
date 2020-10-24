@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{ConfigurationRoot, Key, TypedValue},
+    configuration::{Key, Node, TypedValue},
     error::ConfigurationError,
 };
 use serde::{
@@ -16,7 +16,7 @@ use std::{
     slice::Iter,
 };
 
-impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
+impl<'de> de::Deserializer<'de> for &'de Node {
     type Error = ConfigurationError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -24,17 +24,15 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationRoot::Value(vt) => match vt {
+            Node::Value(vt) => match vt {
                 Some(TypedValue::Float(v)) => visitor.visit_f64(*v),
                 Some(TypedValue::String(v)) => visitor.visit_string(v.clone()),
                 Some(TypedValue::SignedInteger(v)) => visitor.visit_i64(*v),
                 Some(TypedValue::Bool(v)) => visitor.visit_bool(*v),
                 None => visitor.visit_none(),
             },
-            ConfigurationRoot::Map(m) => {
-                visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
-            }
-            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
+            Node::Map(m) => visitor.visit_map(MapAccessor(m.keys().peekable(), m.values())),
+            Node::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
         }
     }
 
@@ -150,8 +148,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationRoot::Value(Some(_)) => visitor.visit_some(self),
-            ConfigurationRoot::Value(None) => visitor.visit_none(),
+            Node::Value(Some(_)) => visitor.visit_some(self),
+            Node::Value(None) => visitor.visit_none(),
             cr => Err(Error::invalid_type(
                 Unexpected::Other(&cr.node_type().to_string()),
                 &"value",
@@ -164,7 +162,7 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationRoot::Value(Some(TypedValue::String(s))) => {
+            Node::Value(Some(TypedValue::String(s))) => {
                 if s.trim().is_empty() {
                     visitor.visit_unit()
                 } else {
@@ -173,8 +171,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
                     ))
                 }
             }
-            ConfigurationRoot::Value(None) => visitor.visit_unit(),
-            ConfigurationRoot::Value(_) => Err(Error::invalid_type(
+            Node::Value(None) => visitor.visit_unit(),
+            Node::Value(_) => Err(Error::invalid_type(
                 Unexpected::Other("non empty value"),
                 &"null or empty value",
             )),
@@ -223,8 +221,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationRoot {
 }
 
 struct MapAccessor<'conf>(
-    Peekable<Keys<'conf, String, ConfigurationRoot>>,
-    Values<'conf, String, ConfigurationRoot>,
+    Peekable<Keys<'conf, String, Node>>,
+    Values<'conf, String, Node>,
 );
 
 impl<'de> MapAccess<'de> for MapAccessor<'de> {
@@ -272,7 +270,7 @@ impl<'de> MapAccess<'de> for MapAccessor<'de> {
     }
 }
 
-struct SeqAccessor<'conf>(Enumerate<Iter<'conf, ConfigurationRoot>>);
+struct SeqAccessor<'conf>(Enumerate<Iter<'conf, Node>>);
 
 impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
     type Error = ConfigurationError;
@@ -292,7 +290,7 @@ impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
 }
 
 struct EnumAccessor<'conf> {
-    root: &'conf ConfigurationRoot,
+    root: &'conf Node,
 }
 
 impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
@@ -304,17 +302,17 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
         V: DeserializeSeed<'de>,
     {
         match self.root {
-            ConfigurationRoot::Value(Some(TypedValue::String(v))) => {
+            Node::Value(Some(TypedValue::String(v))) => {
                 let deserializer: StrDeserializer<ConfigurationError> =
                     v.as_str().into_deserializer();
                 let value = seed.deserialize(deserializer)?;
 
                 Ok((value, self))
             }
-            ConfigurationRoot::Value(_) => Err(Error::custom(
+            Node::Value(_) => Err(Error::custom(
                 "expected string or single key map, got other value type",
             )),
-            ConfigurationRoot::Map(m) => {
+            Node::Map(m) => {
                 if m.len() != 1 {
                     return Err(Error::invalid_length(m.len(), &"expected map of length 1"));
                 }
@@ -327,7 +325,7 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
 
                 Ok((value, self))
             }
-            ConfigurationRoot::Array(_) => Err(Error::invalid_type(
+            Node::Array(_) => Err(Error::invalid_type(
                 Unexpected::Seq,
                 &"expected string or single key map",
             )),
@@ -347,7 +345,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         T: DeserializeSeed<'de>,
     {
         match self.root {
-            ConfigurationRoot::Value(Some(tv)) => seed.deserialize(tv),
+            Node::Value(Some(tv)) => seed.deserialize(tv),
             cr => Err(Error::custom(format!(
                 "expected value, got {}",
                 cr.node_type(),
@@ -360,7 +358,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationRoot::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
+            Node::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
             cr => Err(Error::custom(format!(
                 "expected array, got {}",
                 cr.node_type(),
@@ -377,9 +375,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationRoot::Map(m) => {
-                visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
-            }
+            Node::Map(m) => visitor.visit_map(MapAccessor(m.keys().peekable(), m.values())),
             cr => Err(Error::custom(format!(
                 "expected map, got {}",
                 cr.node_type(),

@@ -2,7 +2,7 @@ use crate::{
     configuration::Configuration,
     error::ConfigurationError,
     format::ConfigurationDeserializer,
-    source::{AsyncSource, Source},
+    source::{AsyncSource, DummySource, Source},
 };
 
 use std::default::Default;
@@ -37,6 +37,14 @@ impl<'a> ConfigurationBuilder<'a> {
         self
     }
 
+    pub fn add_existing<D>(&mut self, de: D) -> &mut ConfigurationBuilder<'a>
+    where
+        D: ConfigurationDeserializer + 'a,
+    {
+        self.sources.push((Box::new(DummySource), Box::new(de)));
+        self
+    }
+
     pub fn add_async<S, D>(self, source: S, de: D) -> AsyncConfigurationBuilder<'a>
     where
         S: AsyncSource + 'a,
@@ -51,8 +59,7 @@ impl<'a> ConfigurationBuilder<'a> {
         let mut result = Configuration::default();
 
         for (source, de) in self.sources.iter_mut() {
-            let input = source.collect()?;
-            let configuration = de.deserialize(input)?;
+            let configuration = de.deserialize(source.collect()?)?;
             result.add_root(configuration);
         }
 

@@ -1,4 +1,4 @@
-use configuration_rs::configuration::ConfigurationRoot;
+use configuration_rs::configuration::Node;
 use serde::Deserialize;
 
 #[test]
@@ -38,7 +38,7 @@ fn test_deserialization_all_simple_types() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -76,7 +76,7 @@ fn test_deserialization_struct_with_map() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -95,7 +95,7 @@ fn test_deserialization_struct_with_array() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -123,7 +123,7 @@ fn test_deserialization_struct_with_array_of_structs() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -156,7 +156,7 @@ fn test_deserialization_struct_with_array_of_structs_transparent() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -198,7 +198,7 @@ fn test_deserialization_enum_unit_variant() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -217,7 +217,7 @@ fn test_deserialization_enum_unit_variant_untagged() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -238,7 +238,7 @@ fn test_deserialization_enum_newtype_variant() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -257,7 +257,7 @@ fn test_deserialization_enum_newtype_variant_untagged() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -278,7 +278,7 @@ fn test_deserialization_enum_tuple_variant() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -297,7 +297,7 @@ fn test_deserialization_enum_tuple_variant_untagged() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -320,7 +320,7 @@ fn test_deserialization_enum_struct_variant() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -341,7 +341,7 @@ fn test_deserialization_enum_struct_variant_untagged() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 
@@ -363,7 +363,7 @@ fn test_deserialization_option() {
     })
     .to_string();
 
-    let root = serde_json::from_str::<ConfigurationRoot>(&config_str).unwrap();
+    let root = serde_json::from_str::<Node>(&config_str).unwrap();
 
     let config = root.try_into::<Config>().unwrap();
 

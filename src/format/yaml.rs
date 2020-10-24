@@ -1,5 +1,5 @@
 use crate::{
-    configuration::ConfigurationRoot,
+    configuration::Node,
     error::{ConfigurationError, ErrorCode},
     format::ConfigurationDeserializer,
 };
@@ -20,8 +20,8 @@ impl Default for YamlDeserializer {
 }
 
 impl ConfigurationDeserializer for YamlDeserializer {
-    fn deserialize(&self, input: String) -> Result<ConfigurationRoot, ConfigurationError> {
-        serde_yaml::from_str::<ConfigurationRoot>(&input)
+    fn deserialize(&self, input: String) -> Result<Node, ConfigurationError> {
+        serde_yaml::from_str::<Node>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }
 }

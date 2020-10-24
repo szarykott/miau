@@ -1,9 +1,11 @@
+mod dummy;
 mod file;
 mod memory;
 
 use crate::error::ConfigurationError;
 use async_trait::async_trait;
 
+pub(crate) use dummy::DummySource;
 pub use file::FileSource;
 pub use memory::InMemorySource;
 

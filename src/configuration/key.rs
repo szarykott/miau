@@ -3,20 +3,21 @@ use std::{convert::From, fmt};
 
 pub type CompoundKey = Vec<Key>;
 
-#[macro_export]
-macro_rules! key {
-    [$($val:expr),*] => {{
-        let mut ck : $crate::configuration::CompoundKey = Vec::new();
-        $(ck.push($crate::configuration::Key::from($val));)*
-        ck
-    }};
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 #[serde(untagged)]
 pub enum Key {
     Array(usize),
     Map(String),
+}
+
+pub trait AsKey {
+    fn as_key(&self) -> CompoundKey;
+}
+
+impl AsKey for Key {
+    fn as_key(&self) -> CompoundKey {
+        vec![self.clone()]
+    }
 }
 
 impl fmt::Display for Key {
@@ -38,6 +39,15 @@ impl From<&str> for Key {
     fn from(v: &str) -> Self {
         Key::Map(v.to_string())
     }
+}
+
+#[macro_export]
+macro_rules! key {
+    [$($val:expr),*] => {{
+        let mut ck : $crate::configuration::CompoundKey = Vec::new();
+        $(ck.push($crate::configuration::Key::from($val));)*
+        ck
+    }};
 }
 
 macro_rules! impl_key_from {

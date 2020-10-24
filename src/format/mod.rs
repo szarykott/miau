@@ -1,5 +1,6 @@
 use crate::{configuration::Node, error::ConfigurationError};
 
+mod config;
 mod json;
 mod node;
 mod yaml;

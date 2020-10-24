@@ -5,4 +5,5 @@ pub mod configuration;
 pub mod de;
 pub mod error;
 pub mod format;
+mod parsing;
 pub mod source;

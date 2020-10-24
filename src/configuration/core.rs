@@ -5,14 +5,14 @@ use crate::{
 use serde::de::DeserializeOwned;
 use std::{convert::TryFrom, default::Default};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Configuration {
     roots: Vec<Node>,
 }
 
 #[derive(Debug)]
 pub struct MergedConfiguration {
-    root: Node,
+    pub(crate) root: Node,
 }
 
 impl Configuration {

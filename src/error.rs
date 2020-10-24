@@ -58,6 +58,7 @@ pub enum ErrorCode {
     GenericError(Box<dyn std::error::Error>),
     SerdeError(String),
     MissingValue,
+    ParsingError(String),
 }
 
 impl ConfigurationError {
@@ -68,6 +69,7 @@ impl ConfigurationError {
             | ErrorCode::IndexOutOfRange(_)
             | ErrorCode::WrongKeyType(_)
             | ErrorCode::MissingValue
+            | ErrorCode::ParsingError(_)
             | ErrorCode::KeyNotFound(_) => Category::ConfigurationAccess,
             ErrorCode::IncompatibleNodeSubstitution(_, _)
             | ErrorCode::IncompatibleValueSubstitution(_, _) => Category::ConfigurationMerge,
@@ -122,6 +124,7 @@ impl Display for ConfigurationError {
                 write!(f, "serialization or deserialization error occured : {}.", e)
             }
             ErrorCode::MissingValue => write!(f, "missing a value."),
+            ErrorCode::ParsingError(msg) => write!(f, "error while parsing : {}", msg),
         }
     }
 }

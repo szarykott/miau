@@ -46,8 +46,15 @@ mod tests {
         case("1]", vec![Key::Map("1]".into())]),
         case("1]:[2", vec![Key::Map("1]".into()), Key::Map("[2".into())]),
     )]
-    fn test_key_to_str(input: &str, exp: Vec<Key>) {
+    fn test_key_to_str_success(input: &str, exp: Vec<Key>) {
         let parsed = str_to_key(input).unwrap();
         assert!(exp.iter().eq(parsed.iter()))
+    }
+
+    #[test]
+    fn test_key_to_str_failure() {
+        let input = "[A]";
+        let parsed = str_to_key(input);
+        assert!(parsed.is_err());
     }
 }

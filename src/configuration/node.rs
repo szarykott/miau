@@ -9,6 +9,7 @@ use std::{
     fmt::Display,
 };
 
+// TODO: Try to find a way to make Node private
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Node {

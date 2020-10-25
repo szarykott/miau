@@ -28,7 +28,7 @@ fn test_single_map_entry_config_merge_json() {
 }
 
 #[test]
-fn test_single_map_entry_config_merge_json_wrong_type() {
+fn test_single_map_entry_config_merge_json_different_type() {
     let config_str_1 = r#"{"value" : 1}"#;
     let config_str_2 = r#"{"value" : "2"}"#;
 
@@ -39,7 +39,7 @@ fn test_single_map_entry_config_merge_json_wrong_type() {
         .build()
         .unwrap();
 
-    assert_eq!(Some("2"), result.get_option("value"))
+    assert_eq!(Some("2"), result.get_option("value"));
 }
 
 #[test]

@@ -1,17 +1,14 @@
 use crate::{
     configuration::Configuration,
     error::ConfigurationError,
-    format::ConfigurationDeserializer,
+    format::Transformer,
     source::{AsyncSource, DummySource, Source},
 };
 
 use std::default::Default;
 
 pub struct ConfigurationBuilder<'a> {
-    sources: Vec<(
-        Box<dyn Source + 'a>,
-        Box<dyn ConfigurationDeserializer + 'a>,
-    )>,
+    sources: Vec<(Box<dyn Source + 'a>, Box<dyn Transformer + 'a>)>,
 }
 
 impl<'a> Default for ConfigurationBuilder<'a> {
@@ -31,7 +28,7 @@ impl<'a> ConfigurationBuilder<'a> {
     pub fn add<S, D>(&mut self, source: S, de: D) -> &mut ConfigurationBuilder<'a>
     where
         S: Source + 'a,
-        D: ConfigurationDeserializer + 'a,
+        D: Transformer + 'a,
     {
         self.sources.push((Box::new(source), Box::new(de)));
         self
@@ -39,7 +36,7 @@ impl<'a> ConfigurationBuilder<'a> {
 
     pub fn add_existing<D>(&mut self, de: D) -> &mut ConfigurationBuilder<'a>
     where
-        D: ConfigurationDeserializer + 'a,
+        D: Transformer + 'a,
     {
         self.sources.push((Box::new(DummySource), Box::new(de)));
         self
@@ -48,7 +45,7 @@ impl<'a> ConfigurationBuilder<'a> {
     pub fn add_async<S, D>(self, source: S, de: D) -> AsyncConfigurationBuilder<'a>
     where
         S: AsyncSource + 'a,
-        D: ConfigurationDeserializer + 'a,
+        D: Transformer + 'a,
     {
         let mut async_builder = AsyncConfigurationBuilder::from_synchronous_builder(self);
         async_builder.add_async(source, de);
@@ -59,7 +56,7 @@ impl<'a> ConfigurationBuilder<'a> {
         let mut result = Configuration::default();
 
         for (source, de) in self.sources.iter_mut() {
-            let configuration = de.deserialize(source.collect()?)?;
+            let configuration = de.transform(source.collect()?)?;
             result.add_root(configuration);
         }
 
@@ -68,7 +65,7 @@ impl<'a> ConfigurationBuilder<'a> {
 }
 
 pub struct AsyncConfigurationBuilder<'a> {
-    sources: Vec<(SourceType<'a>, Box<dyn ConfigurationDeserializer + 'a>)>,
+    sources: Vec<(SourceType<'a>, Box<dyn Transformer + 'a>)>,
 }
 
 impl<'a> AsyncConfigurationBuilder<'a> {
@@ -93,7 +90,7 @@ impl<'a> AsyncConfigurationBuilder<'a> {
     pub fn add<S, D>(&mut self, source: S, de: D)
     where
         S: Source + 'a,
-        D: ConfigurationDeserializer + 'a,
+        D: Transformer + 'a,
     {
         self.sources
             .push((SourceType::Synchronous(Box::new(source)), Box::new(de)));
@@ -102,7 +99,7 @@ impl<'a> AsyncConfigurationBuilder<'a> {
     pub fn add_async<S, D>(&mut self, source: S, de: D)
     where
         S: AsyncSource + 'a,
-        D: ConfigurationDeserializer + 'a,
+        D: Transformer + 'a,
     {
         self.sources
             .push((SourceType::Asynchronous(Box::new(source)), Box::new(de)));

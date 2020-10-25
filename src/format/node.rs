@@ -1,7 +1,7 @@
-use crate::{configuration::Node, error::ConfigurationError, format::ConfigurationDeserializer};
+use crate::{configuration::Node, error::ConfigurationError, format::Transformer};
 
-impl ConfigurationDeserializer for Node {
-    fn deserialize(&self, _input: String) -> Result<Node, ConfigurationError> {
+impl Transformer for Node {
+    fn transform(&self, _input: String) -> Result<Node, ConfigurationError> {
         Ok(self.clone())
     }
 }

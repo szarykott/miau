@@ -1,7 +1,7 @@
 use crate::{
     configuration::Node,
     error::{ConfigurationError, ErrorCode},
-    format::ConfigurationDeserializer,
+    format::Transformer,
 };
 use std::default::Default;
 
@@ -19,8 +19,8 @@ impl Default for YamlDeserializer {
     }
 }
 
-impl ConfigurationDeserializer for YamlDeserializer {
-    fn deserialize(&self, input: String) -> Result<Node, ConfigurationError> {
+impl Transformer for YamlDeserializer {
+    fn transform(&self, input: String) -> Result<Node, ConfigurationError> {
         serde_yaml::from_str::<Node>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }

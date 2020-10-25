@@ -71,8 +71,7 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-    let value = result.get_option::<isize, &str>("value1");
-    assert_eq!(Some(exp), value);
+    assert_eq!(Some(exp), result.get_option("value1"));
 }
 
 #[rstest(
@@ -96,13 +95,8 @@ fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
         JsonDeserializer::new(),
     );
 
-    let result = builder.build();
-
-    assert!(result.is_ok());
-
-    let result = result.unwrap();
-    let value = result.get_option("value1");
-    assert_eq!(Some(exp), value);
+    let result = builder.build().unwrap();
+    assert_eq!(Some(exp), result.get_option("value1"));
 }
 
 #[rstest(
@@ -126,13 +120,8 @@ fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
         JsonDeserializer::new(),
     );
 
-    let result = builder.build();
-
-    assert!(result.is_ok());
-
-    let result = result.unwrap();
-    let value = result.get_option("value1");
-    assert_eq!(Some(exp), value);
+    let result = builder.build().unwrap();
+    assert_eq!(Some(exp), result.get_option("value1"));
 }
 
 #[rstest(
@@ -156,11 +145,6 @@ fn test_type_to_string_substitution(c1: &str, c2: &str, exp: &str) {
         JsonDeserializer::new(),
     );
 
-    let result = builder.build();
-
-    assert!(result.is_ok());
-
-    let result = result.unwrap();
-    let value = result.get_option("value1");
-    assert_eq!(Some(exp.to_string()), value);
+    let result = builder.build().unwrap();
+    assert_eq!(Some(exp), result.get_option("value1"));
 }

@@ -1,4 +1,6 @@
-use configuration_rs::configuration::{Node, Value};
+#![cfg(test)]
+
+use crate::configuration::{Node, Value};
 use std::collections::HashMap;
 
 #[test]

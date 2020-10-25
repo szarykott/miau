@@ -1,5 +1,7 @@
-use configuration_rs::configuration::Node;
-use configuration_rs::key;
+#![cfg(test)]
+
+use crate::configuration::Node;
+use crate::key;
 
 #[test]
 fn build_tree_from_yaml_1() {

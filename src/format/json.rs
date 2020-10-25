@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Node,
+    configuration::Configuration,
     error::{ConfigurationError, ErrorCode},
     format::Transformer,
 };
@@ -20,8 +20,8 @@ impl Default for JsonDeserializer {
 }
 
 impl Transformer for JsonDeserializer {
-    fn transform(&self, input: String) -> Result<Node, ConfigurationError> {
-        serde_json::from_str::<Node>(&input)
+    fn transform(&self, input: String) -> Result<Configuration, ConfigurationError> {
+        serde_json::from_str::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }
 }

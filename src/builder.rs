@@ -56,8 +56,10 @@ impl<'a> ConfigurationBuilder<'a> {
         let mut result = Configuration::default();
 
         for (source, de) in self.sources.iter_mut() {
-            let configuration = de.transform(source.collect()?)?;
-            result.add_root(configuration);
+            let roots = de.transform(source.collect()?)?;
+            for configuration in roots.roots {
+                result.roots.push(configuration);
+            }
         }
 
         Ok(result)

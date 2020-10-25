@@ -9,10 +9,9 @@ use std::{
     fmt::Display,
 };
 
-// TODO: Try to find a way to make Node private
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
-pub enum Node {
+pub(crate) enum Node {
     Value(Option<Value>),
     Map(HashMap<String, Node>),
     Array(Vec<Node>),
@@ -26,14 +25,17 @@ pub enum NodeType {
 }
 
 impl Node {
-    pub fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
+    pub(crate) fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
     where
         T: TryFrom<&'node Value, Error = ConfigurationError>,
     {
         self.get_result(keys).ok().unwrap_or_default()
     }
 
-    pub fn get_result<'a, T>(&'a self, keys: &CompoundKey) -> Result<Option<T>, ConfigurationError>
+    pub(crate) fn get_result<'a, T>(
+        &'a self,
+        keys: &CompoundKey,
+    ) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
@@ -44,7 +46,7 @@ impl Node {
         node.and_then(|node| node.get_value::<T>())
     }
 
-    pub fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
+    pub(crate) fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
@@ -63,7 +65,7 @@ impl Node {
         }
     }
 
-    pub fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
+    pub(crate) fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
         match self {
             Node::Value(_) => match key {
                 Key::Array(_) => {
@@ -90,7 +92,7 @@ impl Node {
         }
     }
 
-    pub fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
+    pub(crate) fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
         T::deserialize(self)
     }
 

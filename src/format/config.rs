@@ -1,17 +1,19 @@
 use crate::{
-    configuration::{Configuration, MergedConfiguration, Node},
+    configuration::{Configuration, SingularConfiguration},
     error::ConfigurationError,
     format::Transformer,
 };
 
 impl Transformer for Configuration {
-    fn transform(&self, _input: String) -> Result<Node, ConfigurationError> {
-        Ok(self.clone().merge_owned()?.root)
+    fn transform(&self, _input: String) -> Result<Configuration, ConfigurationError> {
+        Ok(self.clone())
     }
 }
 
-impl Transformer for MergedConfiguration {
-    fn transform(&self, _input: String) -> Result<Node, ConfigurationError> {
-        Ok(self.root.clone())
+impl Transformer for SingularConfiguration {
+    fn transform(&self, _input: String) -> Result<Configuration, ConfigurationError> {
+        Ok(Configuration {
+            roots: vec![self.root.clone()],
+        })
     }
 }

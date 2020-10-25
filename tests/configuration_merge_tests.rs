@@ -1,12 +1,12 @@
 use configuration_rs::key;
-use configuration_rs::{builder::ConfigurationBuilder, configuration::Node};
+use configuration_rs::{builder::ConfigurationBuilder, configuration::Configuration};
 
 #[test]
 fn test_single_value_integer_config_merge_json() {
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>("1").unwrap())
-        .add_existing(serde_json::from_str::<Node>("2").unwrap())
+        .add_existing(serde_json::from_str::<Configuration>("1").unwrap())
+        .add_existing(serde_json::from_str::<Configuration>("2").unwrap())
         .build()
         .unwrap();
 
@@ -18,8 +18,8 @@ fn test_single_value_integer_config_merge_json() {
 fn test_single_map_entry_config_merge_json() {
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(r#"{"value" : 1}"#).unwrap())
-        .add_existing(serde_json::from_str::<Node>(r#"{"value" : 2}"#).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(r#"{"value" : 1}"#).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(r#"{"value" : 2}"#).unwrap())
         .build()
         .unwrap();
 
@@ -34,8 +34,8 @@ fn test_single_map_entry_config_merge_json_different_type() {
 
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_1).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_2).unwrap())
         .build()
         .unwrap();
 
@@ -49,8 +49,8 @@ fn test_two_map_entries_config_merge_json() {
 
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_1).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_2).unwrap())
         .build()
         .unwrap();
 
@@ -65,8 +65,8 @@ fn test_single_array_entry_config_merge_json() {
 
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_1).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_2).unwrap())
         .build()
         .unwrap();
 
@@ -114,8 +114,8 @@ fn test_complex_map_config_merge_json() {
 
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_1).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_2).unwrap())
         .build()
         .unwrap();
 
@@ -150,8 +150,8 @@ fn test_array_config_merge_json() {
 
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_1).unwrap())
+        .add_existing(serde_json::from_str::<Configuration>(&config_str_2).unwrap())
         .build()
         .unwrap();
 

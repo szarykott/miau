@@ -3,7 +3,7 @@ mod key;
 mod node;
 mod value;
 
-pub use self::core::{Configuration, MergedConfiguration};
-pub use self::node::{Node, NodeType};
+pub use self::core::{Configuration, SingularConfiguration};
+pub(crate) use self::node::{Node, NodeType};
 pub use key::{CompoundKey, Key};
 pub use value::Value;

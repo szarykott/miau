@@ -2,27 +2,25 @@ use crate::{
     configuration::{node, node::Node, CompoundKey, Value},
     error::{ConfigurationError, ErrorCode},
 };
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
     default::Default,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(from = "Node")]
 pub struct Configuration {
-    roots: Vec<Node>,
+    pub(crate) roots: Vec<Node>,
 }
 
-#[derive(Debug, Clone)]
-pub struct MergedConfiguration {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct SingularConfiguration {
     pub(crate) root: Node,
 }
 
 impl Configuration {
-    pub(crate) fn add_root(&mut self, root: Node) {
-        self.roots.push(root);
-    }
-
     pub fn get_option<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
@@ -39,14 +37,20 @@ impl Configuration {
         self.merge_owned()?.try_into()
     }
 
-    pub fn merge_owned(mut self) -> Result<MergedConfiguration, ConfigurationError> {
+    pub fn merge_owned(mut self) -> Result<SingularConfiguration, ConfigurationError> {
         let mut roots = self.roots.drain(..);
         match roots.next() {
             Some(node) => roots
                 .try_fold(node, |acc, next| node::merge(acc, next))
-                .map(|final_node| MergedConfiguration { root: final_node }),
+                .map(|final_node| SingularConfiguration { root: final_node }),
             None => Err(ErrorCode::MissingValue.into()),
         }
+    }
+}
+
+impl SingularConfiguration {
+    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
+        Node::try_into::<T>(&self.root)
     }
 }
 
@@ -56,8 +60,14 @@ impl Default for Configuration {
     }
 }
 
-impl MergedConfiguration {
-    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
-        Node::try_into::<T>(&self.root)
+impl From<Node> for Configuration {
+    fn from(node: Node) -> Self {
+        Configuration { roots: vec![node] }
+    }
+}
+
+impl From<Node> for SingularConfiguration {
+    fn from(node: Node) -> Self {
+        SingularConfiguration { root: node }
     }
 }

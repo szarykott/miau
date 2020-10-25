@@ -5,20 +5,20 @@ use std::fmt;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
-pub enum TypedValue {
+pub enum Value {
     String(String),
     Bool(bool),
     SignedInteger(i64),
     Float(f64),
 }
 
-impl fmt::Display for TypedValue {
+impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypedValue::String(v) => write!(f, "String : {}", v),
-            TypedValue::Bool(v) => write!(f, "Bool : {}", v),
-            TypedValue::SignedInteger(v) => write!(f, "SignedInteger : {}", v),
-            TypedValue::Float(v) => write!(f, "Float : {}", v),
+            Value::String(v) => write!(f, "String : {}", v),
+            Value::Bool(v) => write!(f, "Bool : {}", v),
+            Value::SignedInteger(v) => write!(f, "SignedInteger : {}", v),
+            Value::Float(v) => write!(f, "Float : {}", v),
         }
     }
 }
@@ -26,17 +26,17 @@ impl fmt::Display for TypedValue {
 macro_rules! try_from_for_int {
     ($($t:ty),*) => {
         $(
-            impl TryFrom<&TypedValue> for $t {
+            impl TryFrom<&Value> for $t {
                 type Error = ConfigurationError;
 
-                fn try_from(value: &TypedValue) -> Result<Self, Self::Error> {
+                fn try_from(value: &Value) -> Result<Self, Self::Error> {
                     match value {
-                        TypedValue::String(v) => v.parse::<$t>()
+                        Value::String(v) => v.parse::<$t>()
                             .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "string".into()).into()),
-                        TypedValue::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
-                        TypedValue::SignedInteger(v) => (*v).try_into()
+                        Value::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
+                        Value::SignedInteger(v) => (*v).try_into()
                             .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "i64".into()).into()),
-                        TypedValue::Float(v) => {
+                        Value::Float(v) => {
                             if *v <= <$t>::MAX as f64 {
                                 Ok(*v as $t)
                             } else {
@@ -54,16 +54,16 @@ try_from_for_int!(i8, i16, i32, i64, isize);
 macro_rules! try_from_for_float {
     ($($t:ty),*) => {
         $(
-            impl TryFrom<&TypedValue> for $t {
+            impl TryFrom<&Value> for $t {
                 type Error = ConfigurationError;
 
-                fn try_from(value: &TypedValue) -> Result<Self, Self::Error> {
+                fn try_from(value: &Value) -> Result<Self, Self::Error> {
                     match value {
-                        TypedValue::String(v) => v.parse::<$t>()
+                        Value::String(v) => v.parse::<$t>()
                             .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "string".into()).into()),
-                        TypedValue::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
-                        TypedValue::SignedInteger(v) => Ok(*v as $t),
-                        TypedValue::Float(v) => Ok(*v as $t)
+                        Value::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
+                        Value::SignedInteger(v) => Ok(*v as $t),
+                        Value::Float(v) => Ok(*v as $t)
                     }
                 }
             }
@@ -72,12 +72,12 @@ macro_rules! try_from_for_float {
 }
 try_from_for_float!(f32, f64);
 
-impl TryFrom<&TypedValue> for bool {
+impl TryFrom<&Value> for bool {
     type Error = ConfigurationError;
 
-    fn try_from(value: &TypedValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {
-            TypedValue::String(v) => {
+            Value::String(v) => {
                 let vlc = v.to_lowercase();
                 if vlc == "1" || vlc == "true" {
                     Ok(true)
@@ -87,8 +87,8 @@ impl TryFrom<&TypedValue> for bool {
                     Err(ErrorCode::UnexpectedValueType("bool".into(), "string".into()).into())
                 }
             }
-            TypedValue::Bool(v) => Ok(*v),
-            TypedValue::SignedInteger(v) => {
+            Value::Bool(v) => Ok(*v),
+            Value::SignedInteger(v) => {
                 if v == &1 {
                     Ok(true)
                 } else if v == &0 {
@@ -97,7 +97,7 @@ impl TryFrom<&TypedValue> for bool {
                     Err(ErrorCode::UnexpectedValueType("bool".into(), "i64".into()).into())
                 }
             }
-            TypedValue::Float(v) => {
+            Value::Float(v) => {
                 if v == &1f64 {
                     Ok(true)
                 } else if v == &0f64 {
@@ -110,25 +110,25 @@ impl TryFrom<&TypedValue> for bool {
     }
 }
 
-impl TryFrom<&TypedValue> for String {
+impl TryFrom<&Value> for String {
     type Error = ConfigurationError;
 
-    fn try_from(value: &TypedValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
         Ok(match value {
-            TypedValue::String(v) => v.to_string(),
-            TypedValue::Bool(v) => v.to_string(),
-            TypedValue::SignedInteger(v) => v.to_string(),
-            TypedValue::Float(v) => v.to_string(),
+            Value::String(v) => v.to_string(),
+            Value::Bool(v) => v.to_string(),
+            Value::SignedInteger(v) => v.to_string(),
+            Value::Float(v) => v.to_string(),
         })
     }
 }
 
-impl<'conf> TryFrom<&'conf TypedValue> for &'conf str {
+impl<'conf> TryFrom<&'conf Value> for &'conf str {
     type Error = ConfigurationError;
 
-    fn try_from(value: &'conf TypedValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &'conf Value) -> Result<Self, Self::Error> {
         match value {
-            TypedValue::String(v) => Ok(v.as_str()),
+            Value::String(v) => Ok(v.as_str()),
             _ => Err(ErrorCode::UnexpectedValueType("".into(), "".into()).into()),
         }
     }

@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{CompoundKey, Key, TypedValue},
+    configuration::{CompoundKey, Key, Value},
     error::{ConfigurationError, ErrorCode},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -12,7 +12,7 @@ use std::{
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Node {
-    Value(Option<TypedValue>),
+    Value(Option<Value>),
     Map(HashMap<String, Node>),
     Array(Vec<Node>),
 }
@@ -27,14 +27,14 @@ pub enum NodeType {
 impl Node {
     pub fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
     where
-        T: TryFrom<&'node TypedValue, Error = ConfigurationError>,
+        T: TryFrom<&'node Value, Error = ConfigurationError>,
     {
         self.get_result(keys).ok().unwrap_or_default()
     }
 
     pub fn get_result<'a, T>(&'a self, keys: &CompoundKey) -> Result<Option<T>, ConfigurationError>
     where
-        T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
         let mut node = Result::Ok(self);
         for key in keys.iter() {
@@ -45,7 +45,7 @@ impl Node {
 
     pub fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
     where
-        T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
         match self {
             Node::Value(Some(v)) => match TryFrom::try_from(v) {

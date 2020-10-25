@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{node, node::Node, CompoundKey, TypedValue},
+    configuration::{node, node::Node, CompoundKey, Value},
     error::{ConfigurationError, ErrorCode},
 };
 use serde::de::DeserializeOwned;
@@ -25,7 +25,7 @@ impl Configuration {
 
     pub fn get_option<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
-        T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
         S: TryInto<CompoundKey>,
     {
         let keys = keys.try_into().ok()?;

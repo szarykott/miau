@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{Key, Node, TypedValue},
+    configuration::{Key, Node, Value},
     error::ConfigurationError,
 };
 use serde::{
@@ -25,10 +25,10 @@ impl<'de> de::Deserializer<'de> for &'de Node {
     {
         match self {
             Node::Value(vt) => match vt {
-                Some(TypedValue::Float(v)) => visitor.visit_f64(*v),
-                Some(TypedValue::String(v)) => visitor.visit_string(v.clone()),
-                Some(TypedValue::SignedInteger(v)) => visitor.visit_i64(*v),
-                Some(TypedValue::Bool(v)) => visitor.visit_bool(*v),
+                Some(Value::Float(v)) => visitor.visit_f64(*v),
+                Some(Value::String(v)) => visitor.visit_string(v.clone()),
+                Some(Value::SignedInteger(v)) => visitor.visit_i64(*v),
+                Some(Value::Bool(v)) => visitor.visit_bool(*v),
                 None => visitor.visit_none(),
             },
             Node::Map(m) => visitor.visit_map(MapAccessor(m.keys().peekable(), m.values())),
@@ -162,7 +162,7 @@ impl<'de> de::Deserializer<'de> for &'de Node {
         V: Visitor<'de>,
     {
         match self {
-            Node::Value(Some(TypedValue::String(s))) => {
+            Node::Value(Some(Value::String(s))) => {
                 if s.trim().is_empty() {
                     visitor.visit_unit()
                 } else {
@@ -302,7 +302,7 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
         V: DeserializeSeed<'de>,
     {
         match self.root {
-            Node::Value(Some(TypedValue::String(v))) => {
+            Node::Value(Some(Value::String(v))) => {
                 let deserializer: StrDeserializer<ConfigurationError> =
                     v.as_str().into_deserializer();
                 let value = seed.deserialize(deserializer)?;
@@ -384,7 +384,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
     }
 }
 
-impl<'de> de::Deserializer<'de> for &TypedValue {
+impl<'de> de::Deserializer<'de> for &Value {
     type Error = ConfigurationError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -392,10 +392,10 @@ impl<'de> de::Deserializer<'de> for &TypedValue {
         V: Visitor<'de>,
     {
         match self {
-            TypedValue::String(s) => visitor.visit_str(s.as_str()),
-            TypedValue::Bool(b) => visitor.visit_bool(*b),
-            TypedValue::Float(f) => visitor.visit_f64(*f),
-            TypedValue::SignedInteger(i) => visitor.visit_i64(*i),
+            Value::String(s) => visitor.visit_str(s.as_str()),
+            Value::Bool(b) => visitor.visit_bool(*b),
+            Value::Float(f) => visitor.visit_f64(*f),
+            Value::SignedInteger(i) => visitor.visit_i64(*i),
         }
     }
 

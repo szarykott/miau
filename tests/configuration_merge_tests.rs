@@ -3,32 +3,28 @@ use configuration_rs::{builder::ConfigurationBuilder, configuration::Node};
 
 #[test]
 fn test_single_value_integer_config_merge_json() {
-    let config_str_1 = "1";
-    let config_str_2 = "2";
-
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Node>("1").unwrap())
+        .add_existing(serde_json::from_str::<Node>("2").unwrap())
         .build()
         .unwrap();
 
-    assert_eq!(2, result.get_option::<isize>(&key!()).unwrap());
+    assert_eq!(Some(2i32), result.get_option(""));
+    assert_eq!(Some(2i32), result.get_option(key!()));
 }
 
 #[test]
 fn test_single_map_entry_config_merge_json() {
-    let config_str_1 = r#"{"value" : 1}"#;
-    let config_str_2 = r#"{"value" : 2}"#;
-
     let mut builder = ConfigurationBuilder::default();
     let result = builder
-        .add_existing(serde_json::from_str::<Node>(&config_str_1).unwrap())
-        .add_existing(serde_json::from_str::<Node>(&config_str_2).unwrap())
+        .add_existing(serde_json::from_str::<Node>(r#"{"value" : 1}"#).unwrap())
+        .add_existing(serde_json::from_str::<Node>(r#"{"value" : 2}"#).unwrap())
         .build()
         .unwrap();
 
-    assert_eq!(Some(2), result.get_option(&key!("value")));
+    assert_eq!(Some(2), result.get_option("value"));
+    assert_eq!(Some(2), result.get_option(key!("value")));
 }
 
 #[test]
@@ -43,7 +39,7 @@ fn test_single_map_entry_config_merge_json_wrong_type() {
         .build()
         .unwrap();
 
-    assert_eq!(Some("2"), result.get_option(&key!("value")))
+    assert_eq!(Some("2"), result.get_option("value"))
 }
 
 #[test]
@@ -58,8 +54,8 @@ fn test_two_map_entries_config_merge_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(1), result.get_option(&key!("value1")));
-    assert_eq!(Some(2), result.get_option(&key!("value2")));
+    assert_eq!(Some(1), result.get_option("value1"));
+    assert_eq!(Some(2), result.get_option("value2"));
 }
 
 #[test]
@@ -74,7 +70,7 @@ fn test_single_array_entry_config_merge_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(2), result.get_option(&key!(0u8)));
+    assert_eq!(Some(2), result.get_option("[0]"));
 }
 
 #[test]
@@ -123,18 +119,12 @@ fn test_complex_map_config_merge_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some("Andrew"), result.get_option(&key!("firstName")));
-    assert_eq!(Some("Smith"), result.get_option(&key!("lastName")));
-    assert_eq!(Some(false), result.get_option(&key!("isAlive")));
-    assert_eq!(
-        Some("Knowhere"),
-        result.get_option(&key!("address", "streetAddress"))
-    );
-    assert_eq!(
-        Some("work"),
-        result.get_option(&key!("phoneNumbers", 0u32, "type"))
-    );
-    assert_eq!(Some(true), result.get_option(&key!("spouse")));
+    assert_eq!(Some("Andrew"), result.get_option("firstName"));
+    assert_eq!(Some("Smith"), result.get_option("lastName"));
+    assert_eq!(Some(false), result.get_option("isAlive"));
+    assert_eq!(Some("Knowhere"), result.get_option("address:streetAddress"));
+    assert_eq!(Some("work"), result.get_option("phoneNumbers:[0]:type"));
+    assert_eq!(Some(true), result.get_option("spouse"));
 }
 
 #[test]
@@ -165,6 +155,6 @@ fn test_array_config_merge_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(12), result.get_option(&key!("array", 0u8, "k")));
-    assert_eq!(Some(33), result.get_option::<i32>(&key!("array", 1u8, "k")));
+    assert_eq!(Some(12), result.get_option("array:[0]:k"));
+    assert_eq!(Some(33), result.get_option("array:[1]:k"));
 }

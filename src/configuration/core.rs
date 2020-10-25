@@ -3,14 +3,17 @@ use crate::{
     error::{ConfigurationError, ErrorCode},
 };
 use serde::de::DeserializeOwned;
-use std::{convert::TryFrom, default::Default};
+use std::{
+    convert::{TryFrom, TryInto},
+    default::Default,
+};
 
 #[derive(Debug, Clone)]
 pub struct Configuration {
     roots: Vec<Node>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MergedConfiguration {
     pub(crate) root: Node,
 }
@@ -20,14 +23,16 @@ impl Configuration {
         self.roots.push(root);
     }
 
-    pub fn get_option<'a, T>(&'a self, keys: &CompoundKey) -> Option<T>
+    pub fn get_option<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
         T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
+        S: TryInto<CompoundKey>,
     {
+        let keys = keys.try_into().ok()?;
         self.roots
             .iter()
             .rev()
-            .find_map(|node| node.get_option::<T>(keys))
+            .find_map(|node| node.get_option::<T>(&keys))
     }
 
     pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {

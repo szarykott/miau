@@ -1,7 +1,12 @@
+use crate::{error::ConfigurationError, parsing};
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
+use std::ops::Deref;
 use std::{convert::From, fmt};
 
-pub type CompoundKey = Vec<Key>;
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[serde(transparent)]
+pub struct CompoundKey(Vec<Key>);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 #[serde(untagged)]
@@ -10,13 +15,39 @@ pub enum Key {
     Map(String),
 }
 
-pub trait AsKey {
-    fn as_key(&self) -> CompoundKey;
+impl CompoundKey {
+    pub fn new(keys: Vec<Key>) -> Self {
+        CompoundKey(keys)
+    }
 }
 
-impl AsKey for Key {
-    fn as_key(&self) -> CompoundKey {
-        vec![self.clone()]
+impl Deref for CompoundKey {
+    type Target = Vec<Key>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<Vec<Key>> for CompoundKey {
+    fn from(keys: Vec<Key>) -> Self {
+        CompoundKey::new(keys)
+    }
+}
+
+impl TryFrom<&str> for CompoundKey {
+    type Error = ConfigurationError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        parsing::str_to_key(value)
+    }
+}
+
+impl TryFrom<String> for CompoundKey {
+    type Error = ConfigurationError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        parsing::str_to_key(value.as_ref())
     }
 }
 
@@ -44,9 +75,9 @@ impl From<&str> for Key {
 #[macro_export]
 macro_rules! key {
     [$($val:expr),*] => {{
-        let mut ck : $crate::configuration::CompoundKey = Vec::new();
+        let mut ck : Vec<$crate::configuration::Key> = Vec::new();
         $(ck.push($crate::configuration::Key::from($val));)*
-        ck
+        $crate::configuration::CompoundKey::new(ck)
     }};
 }
 

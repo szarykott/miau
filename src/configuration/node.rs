@@ -37,7 +37,7 @@ impl Node {
         T: TryFrom<&'a TypedValue, Error = ConfigurationError>,
     {
         let mut node = Result::Ok(self);
-        for key in keys {
+        for key in keys.iter() {
             node = node.and_then(|nd| nd.descend(key).map_err(|e| e.enrich_with_key(key.clone())));
         }
         node.and_then(|node| node.get_value::<T>())

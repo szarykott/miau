@@ -19,10 +19,10 @@ impl FileSource {
 }
 
 impl Source for FileSource {
-    fn collect(&self) -> Result<String, ConfigurationError> {
+    fn collect(&self) -> Result<Vec<u8>, ConfigurationError> {
         let mut f = File::open(&self.path)?;
-        let mut buffer = String::new();
-        f.read_to_string(&mut buffer)?;
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer)?;
         Ok(buffer)
     }
 }

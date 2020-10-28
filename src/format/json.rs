@@ -20,8 +20,8 @@ impl Default for JsonDeserializer {
 }
 
 impl Transformer for JsonDeserializer {
-    fn transform(&self, input: String) -> Result<Configuration, ConfigurationError> {
-        serde_json::from_str::<Configuration>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
+        serde_json::from_slice::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }
 }

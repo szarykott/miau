@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl Transformer for Node {
-    fn transform(&self, _input: String) -> Result<Configuration, ConfigurationError> {
+    fn transform(&self, _input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
         Ok(self.clone().into())
     }
 }

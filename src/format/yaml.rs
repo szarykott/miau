@@ -20,8 +20,8 @@ impl Default for YamlDeserializer {
 }
 
 impl Transformer for YamlDeserializer {
-    fn transform(&self, input: String) -> Result<Configuration, ConfigurationError> {
-        serde_yaml::from_str::<Configuration>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
+        serde_yaml::from_slice::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
     }
 }

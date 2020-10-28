@@ -46,6 +46,8 @@ impl Configuration {
             None => Err(ErrorCode::MissingValue.into()),
         }
     }
+
+    // TODO: Add `lens` method that will return reference to subtree of configuration
 }
 
 impl SingularConfiguration {

@@ -1,5 +1,6 @@
 use configuration_rs::configuration::Configuration;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[test]
 fn test_deserialization_all_simple_types() {
@@ -31,7 +32,6 @@ fn test_deserialization_all_simple_types() {
         "uinteger8": 7,
         "boolean" : true,
         "string_owned" : "owned",
-        "str_ref" : "strref",
         "float32" : 1.1,
         "float64" : 1.2,
         "unit" : null
@@ -167,6 +167,30 @@ fn test_deserialization_struct_with_array_of_structs_transparent() {
     ]
     .iter()
     .eq(config.inner.iter()));
+}
+
+#[test]
+fn test_deserialization_struct_with_hashmap() {
+    #[derive(Deserialize)]
+    struct Config {
+        inner: HashMap<String, i32>,
+    }
+
+    let config_str = serde_json::json!({
+        "inner": {
+            "a" : 1,
+            "b" : 2
+        }
+    })
+    .to_string();
+
+    let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
+
+    let config = root.try_into::<Config>().unwrap();
+
+    assert_eq!(Some(&1), config.inner.get("a"));
+    assert_eq!(Some(&2), config.inner.get("b"));
+    assert_eq!(None, config.inner.get("c"));
 }
 
 #[derive(Deserialize, PartialEq, Debug)]

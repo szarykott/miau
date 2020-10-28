@@ -21,6 +21,7 @@ pub struct SingularConfiguration {
 }
 
 impl Configuration {
+    // TODO: Should this be just `get`?
     pub fn get_option<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
@@ -32,6 +33,8 @@ impl Configuration {
             .rev()
             .find_map(|node| node.get_option::<T>(&keys))
     }
+
+    // TODO: Add `get_result` method
 
     pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
         self.merge_owned()?.try_into()

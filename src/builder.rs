@@ -4,7 +4,6 @@ use crate::{
     format::{JsonDeserializer, Provider},
     source::{AsyncSource, DummySource, EnvironmentSource, Source},
 };
-
 use std::default::Default;
 
 pub struct ConfigurationBuilder<'a> {
@@ -25,6 +24,7 @@ impl<'a> ConfigurationBuilder<'a> {
         }
     }
 
+    /// Core function to add new configurations to builder.
     pub fn add<S, D>(&mut self, source: S, de: D) -> &mut ConfigurationBuilder<'a>
     where
         S: Source + 'a,
@@ -34,12 +34,15 @@ impl<'a> ConfigurationBuilder<'a> {
         self
     }
 
+    /// Utility function to add environment variables to builder.
+    /// If prefix is provided, only variables whose keys start with it will be added.
     pub fn add_environment(&mut self, prefix: Option<&str>) -> &mut ConfigurationBuilder<'a> {
         let env_source = EnvironmentSource::new(prefix.map(|p| p.into()));
         self.add(env_source, JsonDeserializer::default());
         self
     }
 
+    /// Adds a new configuration from provider that has values already in memory, therefore not requiring prior collection.
     pub fn add_existing<D>(&mut self, de: D) -> &mut ConfigurationBuilder<'a>
     where
         D: Provider + 'a,

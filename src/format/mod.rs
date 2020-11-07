@@ -8,11 +8,11 @@ mod yaml;
 pub use json::JsonDeserializer;
 pub use yaml::YamlDeserializer;
 
-pub trait Transformer {
+pub trait Provider {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError>;
 }
 
-impl<T> Transformer for T
+impl<T> Provider for T
 where
     T: Fn(Vec<u8>) -> Result<Configuration, ConfigurationError>,
 {

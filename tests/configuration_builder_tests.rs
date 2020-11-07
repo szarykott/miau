@@ -34,7 +34,7 @@ fn test_arrays_are_subsituted_when_config_is_built() {
     case(r#"{"value1" : 1}"#, r#"{"value1" : 2}"#, 2),
     case(r#"{"value1" : 1.2}"#, r#"{"value1" : 1}"#, 1),
     case(r#"{"value1" : false}"#, r#"{"value1" : 3}"#, 3),
-    case(r#"{"value1" : "true"}"#, r#"{"value1" : 4}"#, 4)
+    case(r#"{"value1" : "true"}"#, r#"{"value1" : -4}"#, -4)
 )]
 fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     let mut builder = ConfigurationBuilder::default();
@@ -156,7 +156,7 @@ fn test_single_map_entry_config_build_json_different_type() {
 }
 
 #[test]
-fn test_two_map_entries_config_build_json() {
+fn test_two_different_map_entries_config_build_json() {
     let config_str_1 = r#"{"value1" : 1}"#;
     let config_str_2 = r#"{"value2" : 2}"#;
 

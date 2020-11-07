@@ -2,6 +2,7 @@ use configuration_rs::{
     builder::ConfigurationBuilder, format::JsonDeserializer, source::InMemorySource,
 };
 use rstest::rstest;
+use serde::Deserialize;
 use std::collections::HashMap;
 
 #[rstest(
@@ -45,10 +46,71 @@ fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i3
     let confiuration = builder.build().unwrap();
 
     let mut result = confiuration
-        .merge_owned()
-        .unwrap()
         .try_into::<HashMap<String, Vec<i32>>>()
         .unwrap();
 
     assert_eq!(exp, result.remove("array1".into()).unwrap());
+}
+
+#[test]
+fn test_maps_are_merged_simple() {
+    #[derive(Deserialize, Debug)]
+    struct Config {
+        value1: i32,
+        value2: f64,
+    }
+
+    let cfg1 = r#"{ "value1" : 1 }"#;
+    let cfg2 = r#"{ "value2" : -1.1 }"#;
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(cfg1), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(cfg2), JsonDeserializer::new());
+
+    let confiuration = builder.build().unwrap();
+
+    let result = confiuration.try_into::<Config>().unwrap();
+
+    assert_eq!(result.value1, 1);
+    assert_eq!(result.value2, -1.1);
+}
+
+#[test]
+fn test_maps_are_merged_nested() {
+    #[derive(Deserialize, Debug)]
+    struct Config {
+        value1: ConfigInner,
+        value2: f64,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct ConfigInner {
+        value1: i32,
+    }
+
+    let cfg1 = r#"{ 
+        "value1" : {
+            "value1" : 12
+        } 
+    }"#
+    .trim();
+
+    let cfg2 = r#"{ 
+        "value2" : -1.1,
+        "value1" : {
+            "value1" : 13
+        } 
+    }"#
+    .trim();
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(cfg1), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(cfg2), JsonDeserializer::new());
+
+    let confiuration = builder.build().unwrap();
+
+    let result = confiuration.try_into::<Config>().unwrap();
+
+    assert_eq!(result.value1.value1, 13);
+    assert_eq!(result.value2, -1.1);
 }

@@ -4,6 +4,7 @@ use crate::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
+    collections::HashMap,
     convert::{TryFrom, TryInto},
     default::Default,
 };
@@ -74,5 +75,19 @@ impl From<Node> for Configuration {
 impl From<Node> for SingularConfiguration {
     fn from(node: Node) -> Self {
         SingularConfiguration { root: node }
+    }
+}
+
+impl From<HashMap<String, String>> for Configuration {
+    fn from(map: HashMap<String, String>) -> Self {
+        let mut result = HashMap::new();
+
+        for (k, v) in map {
+            result.insert(k, Node::Value(Some(Value::String(v))));
+        }
+
+        Configuration {
+            roots: vec![Node::Map(result)],
+        }
     }
 }

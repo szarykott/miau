@@ -1,4 +1,4 @@
-use configuration_rs::builder::ConfigurationBuilder;
+use configuration_rs::{builder::ConfigurationBuilder, provider::EnvironmentProvider};
 use std::env;
 
 #[test]
@@ -7,7 +7,7 @@ fn test_environment_source_no_prefix() {
     env::set_var("notmy_awesome_key", "notmy_awesome_value");
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add_environment(None);
+    builder.add_provider(EnvironmentProvider::new());
 
     let configuration = builder.build().unwrap();
 
@@ -28,7 +28,7 @@ fn test_environment_source_with_prefix() {
     env::set_var("notmy_awesome_key", "notmy_awesome_value");
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add_environment(Some("my"));
+    builder.add_provider(EnvironmentProvider::with_prefix("my"));
 
     let configuration = builder.build().unwrap();
 

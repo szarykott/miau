@@ -1,7 +1,7 @@
 use crate::{
     configuration::Configuration,
     error::{ConfigurationError, ErrorCode},
-    format::Provider,
+    format::Transformer,
 };
 use std::default::Default;
 
@@ -19,7 +19,7 @@ impl Default for JsonDeserializer {
     }
 }
 
-impl Provider for JsonDeserializer {
+impl Transformer for JsonDeserializer {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
         serde_json::from_slice::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())

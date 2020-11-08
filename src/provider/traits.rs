@@ -6,16 +6,15 @@ use crate::{
 };
 use async_trait::async_trait;
 
-/// Configuration provider for which distintion between source and format does not make sense or does little sense.
+/// Configuration provider where distintion between source and format does not make sense or does little sense.
 /// Examples might be other configurations already in memory, environment variables or others.
-
 pub trait Provider {
     fn collect(&self) -> Result<Configuration, ConfigurationError>;
 }
 
-/// Async provider for which distintion between source and format does not make sense or makes little sense.
+/// Async provider where distinction between source and format does not make sense or makes little sense.
 #[async_trait]
-pub trait AsyncProvider {
+pub trait AsyncProvider: Send + Sync {
     async fn collect(&self) -> Result<Configuration, ConfigurationError>;
 }
 

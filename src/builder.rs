@@ -31,8 +31,7 @@ impl<'builder> ConfigurationBuilder<'builder> {
         S: Source + 'builder,
         D: Transformer + 'builder,
     {
-        self.sources
-            .push(Box::new(ProviderStruct::synchronous(source, de)));
+        self.add_provider(ProviderStruct::synchronous(source, de));
         self
     }
 
@@ -49,8 +48,15 @@ impl<'builder> ConfigurationBuilder<'builder> {
         S: AsyncSource + Send + Sync + 'builder,
         D: Transformer + Send + Sync + 'builder,
     {
+        self.add_provider_async(ProviderStruct::asynchronous(source, de))
+    }
+
+    pub fn add_provider_async<P>(self, provider: P) -> AsyncConfigurationBuilder<'builder>
+    where
+        P: AsyncProvider + 'builder,
+    {
         let mut async_builder = AsyncConfigurationBuilder::from_synchronous_builder(self);
-        async_builder.add_async(source, de);
+        async_builder.add_provider_async(provider);
         async_builder
     }
 
@@ -72,8 +78,19 @@ pub struct AsyncConfigurationBuilder<'builder> {
     sources: Vec<SourceType<'builder>>,
 }
 
+impl<'builder> Default for AsyncConfigurationBuilder<'builder> {
+    fn default() -> Self {
+        AsyncConfigurationBuilder::new()
+    }
+}
+
+enum SourceType<'builder> {
+    Synchronous(Box<dyn Provider + 'builder>),
+    Asynchronous(Box<dyn AsyncProvider + 'builder>),
+}
+
 impl<'builder> AsyncConfigurationBuilder<'builder> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         AsyncConfigurationBuilder {
             sources: Vec::new(),
         }
@@ -86,33 +103,42 @@ impl<'builder> AsyncConfigurationBuilder<'builder> {
             sources: builder
                 .sources
                 .drain(..)
-                .map(|s| (SourceType::Synchronous(s)))
+                .map(|s| SourceType::Synchronous(s))
                 .collect(),
         }
     }
 
-    pub fn add<S, D>(&mut self, source: S, de: D)
+    pub fn add<S, D>(&mut self, source: S, de: D) -> &mut AsyncConfigurationBuilder<'builder>
     where
         S: Source + 'builder,
         D: Transformer + 'builder,
     {
-        self.sources.push(SourceType::Synchronous(Box::new(
-            ProviderStruct::synchronous(source, de),
-        )));
+        self.add_provider(ProviderStruct::synchronous(source, de))
     }
 
-    pub fn add_async<S, D>(&mut self, source: S, de: D)
+    pub fn add_provider<P>(&mut self, provider: P) -> &mut AsyncConfigurationBuilder<'builder>
+    where
+        P: Provider + 'builder,
+    {
+        self.sources
+            .push(SourceType::Synchronous(Box::new(provider)));
+        self
+    }
+
+    pub fn add_async<S, D>(&mut self, source: S, de: D) -> &mut AsyncConfigurationBuilder<'builder>
     where
         S: AsyncSource + Send + Sync + 'builder,
         D: Transformer + Send + Sync + 'builder,
     {
-        self.sources.push(SourceType::Asynchronous(Box::new(
-            ProviderStruct::asynchronous(source, de),
-        )));
+        self.add_provider_async(ProviderStruct::asynchronous(source, de))
     }
-}
 
-enum SourceType<'builder> {
-    Synchronous(Box<dyn Provider + 'builder>),
-    Asynchronous(Box<dyn AsyncProvider + Send + Sync + 'builder>),
+    pub fn add_provider_async<P>(&mut self, provider: P) -> &mut AsyncConfigurationBuilder<'builder>
+    where
+        P: AsyncProvider + 'builder,
+    {
+        self.sources
+            .push(SourceType::Asynchronous(Box::new(provider)));
+        self
+    }
 }

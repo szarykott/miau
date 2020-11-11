@@ -41,6 +41,7 @@ impl Node {
     {
         let mut node = Result::Ok(self);
         for key in keys.iter() {
+            // TODO: Export descend_many into method so that lens can use it!
             node = node.and_then(|nd| nd.descend(key).map_err(|e| e.enrich_with_key(key.clone())));
         }
         node.and_then(|node| node.get_value::<T>())

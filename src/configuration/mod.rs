@@ -1,5 +1,6 @@
 mod core;
 mod key;
+mod lens;
 mod node;
 mod value;
 

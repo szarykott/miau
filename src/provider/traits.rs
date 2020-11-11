@@ -1,7 +1,7 @@
 use crate::{
     configuration::Configuration,
     error::ConfigurationError,
-    format::Transformer,
+    format::Format,
     source::{AsyncSource, Source},
 };
 use async_trait::async_trait;
@@ -24,7 +24,7 @@ pub struct ProviderStruct<S, T> {
     transformer: T,
 }
 
-impl<S: Source, T: Transformer> ProviderStruct<S, T> {
+impl<S: Source, T: Format> ProviderStruct<S, T> {
     pub fn synchronous(s: S, t: T) -> Self {
         ProviderStruct {
             source: s,
@@ -36,7 +36,7 @@ impl<S: Source, T: Transformer> ProviderStruct<S, T> {
 impl<S, T> ProviderStruct<S, T>
 where
     S: AsyncSource + Send + Sync,
-    T: Transformer + Send + Sync,
+    T: Format + Send + Sync,
 {
     pub fn asynchronous(s: S, t: T) -> Self {
         ProviderStruct {
@@ -46,7 +46,7 @@ where
     }
 }
 
-impl<S: Source, T: Transformer> Provider for ProviderStruct<S, T> {
+impl<S: Source, T: Format> Provider for ProviderStruct<S, T> {
     fn collect(&self) -> Result<Configuration, ConfigurationError> {
         self.transformer.transform(self.source.collect()?)
     }
@@ -56,7 +56,7 @@ impl<S: Source, T: Transformer> Provider for ProviderStruct<S, T> {
 impl<S, T> AsyncProvider for ProviderStruct<S, T>
 where
     S: AsyncSource + Send + Sync,
-    T: Transformer + Send + Sync,
+    T: Format + Send + Sync,
 {
     async fn collect(&self) -> Result<Configuration, ConfigurationError> {
         self.transformer.transform(self.source.collect().await?)

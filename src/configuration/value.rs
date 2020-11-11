@@ -110,6 +110,7 @@ impl TryFrom<&Value> for bool {
     }
 }
 
+// TODO: This could be From
 impl TryFrom<&Value> for String {
     type Error = ConfigurationError;
 
@@ -129,7 +130,7 @@ impl<'conf> TryFrom<&'conf Value> for &'conf str {
     fn try_from(value: &'conf Value) -> Result<Self, Self::Error> {
         match value {
             Value::String(v) => Ok(v.as_str()),
-            _ => Err(ErrorCode::UnexpectedValueType("".into(), "".into()).into()),
+            _ => Err(ErrorCode::UnexpectedValueType("".into(), "".into()).into()), //TODO: Fix it
         }
     }
 }

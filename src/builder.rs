@@ -1,7 +1,7 @@
 use crate::{
     configuration::Configuration,
     error::ConfigurationError,
-    format::Transformer,
+    format::Format,
     provider::{AsyncProvider, Provider, ProviderStruct},
     source::{AsyncSource, Source},
 };
@@ -29,7 +29,7 @@ impl<'builder> ConfigurationBuilder<'builder> {
     pub fn add<S, D>(&mut self, source: S, de: D) -> &mut ConfigurationBuilder<'builder>
     where
         S: Source + 'builder,
-        D: Transformer + 'builder,
+        D: Format + 'builder,
     {
         self.add_provider(ProviderStruct::synchronous(source, de));
         self
@@ -46,7 +46,7 @@ impl<'builder> ConfigurationBuilder<'builder> {
     pub fn add_async<S, D>(self, source: S, de: D) -> AsyncConfigurationBuilder<'builder>
     where
         S: AsyncSource + Send + Sync + 'builder,
-        D: Transformer + Send + Sync + 'builder,
+        D: Format + Send + Sync + 'builder,
     {
         self.add_provider_async(ProviderStruct::asynchronous(source, de))
     }
@@ -111,7 +111,7 @@ impl<'builder> AsyncConfigurationBuilder<'builder> {
     pub fn add<S, D>(&mut self, source: S, de: D) -> &mut AsyncConfigurationBuilder<'builder>
     where
         S: Source + 'builder,
-        D: Transformer + 'builder,
+        D: Format + 'builder,
     {
         self.add_provider(ProviderStruct::synchronous(source, de))
     }
@@ -128,7 +128,7 @@ impl<'builder> AsyncConfigurationBuilder<'builder> {
     pub fn add_async<S, D>(&mut self, source: S, de: D) -> &mut AsyncConfigurationBuilder<'builder>
     where
         S: AsyncSource + Send + Sync + 'builder,
-        D: Transformer + Send + Sync + 'builder,
+        D: Format + Send + Sync + 'builder,
     {
         self.add_provider_async(ProviderStruct::asynchronous(source, de))
     }

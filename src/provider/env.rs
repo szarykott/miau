@@ -1,5 +1,8 @@
 use super::Provider;
-use crate::configuration::Configuration;
+use crate::{
+    configuration::{merge, Configuration, Key, Node, Value},
+    parsing,
+};
 use std::{collections::HashMap, convert::Into, env};
 
 pub struct EnvironmentProvider {
@@ -18,21 +21,57 @@ impl EnvironmentProvider {
     }
 
     fn get(&self) -> Configuration {
-        let mut result: HashMap<String, String> = HashMap::new();
         let vars = env::vars();
 
-        match self.prefix {
-            Some(ref prefix) => push(&mut result, vars.filter(|(key, _)| key.starts_with(prefix))),
-            None => push(&mut result, vars),
-        }
+        let node = match self.prefix {
+            Some(ref prefix) => push(vars.filter(|(key, _)| key.starts_with(prefix))),
+            None => push(vars),
+        };
 
-        result.into()
+        match node {
+            Some(node) => Configuration { roots: vec![node] },
+            None => Configuration { roots: vec![] },
+        }
     }
 }
 
-fn push(result: &mut HashMap<String, String>, keys: impl Iterator<Item = (String, String)>) {
+fn push(keys: impl Iterator<Item = (String, String)>) -> Option<Node> {
+    let mut trees: Vec<Node> = Vec::new();
     for (key, value) in keys {
-        result.insert(key, value);
+        if let Ok(ckey) = parsing::str_to_key(key.as_ref()) {
+            let all_map = ckey
+                .iter()
+                .all(|k| if let Key::Map(_) = k { true } else { false });
+
+            if !all_map {
+                continue;
+            }
+
+            trees.push(create_tree(ckey.iter().map(|k| k.unwrap_map()), value));
+        }
+    }
+
+    let mut drain = trees.drain(..);
+    match drain.next() {
+        Some(node) => {
+            if let Ok(final_node) = drain.try_fold(node, |f, s| merge(f, s)) {
+                Some(final_node)
+            } else {
+                None
+            }
+        }
+        None => None,
+    }
+}
+
+fn create_tree(mut keys: impl Iterator<Item = String>, value: String) -> Node {
+    match keys.next() {
+        Some(key) => {
+            let mut map = HashMap::new();
+            map.insert(key, create_tree(keys, value));
+            Node::Map(map)
+        }
+        None => Node::Value(Some(Value::String(value))),
     }
 }
 

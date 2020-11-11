@@ -21,6 +21,22 @@ impl CompoundKey {
     }
 }
 
+impl Key {
+    pub fn unwrap_map(&self) -> String {
+        match self {
+            Key::Array(_) => panic!("Expected key to be map key!"),
+            Key::Map(s) => s.clone(),
+        }
+    }
+
+    pub fn unwrap_array(&self) -> usize {
+        match self {
+            Key::Array(i) => *i,
+            Key::Map(_) => panic!("Expected key to be array key!"),
+        }
+    }
+}
+
 impl Deref for CompoundKey {
     type Target = Vec<Key>;
 

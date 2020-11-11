@@ -5,21 +5,21 @@ use crate::{
 };
 use std::default::Default;
 
-pub struct JsonDeserializer {}
+pub struct Json {}
 
-impl JsonDeserializer {
+impl Json {
     pub fn new() -> Self {
-        JsonDeserializer {}
+        Json {}
     }
 }
 
-impl Default for JsonDeserializer {
+impl Default for Json {
     fn default() -> Self {
-        JsonDeserializer::new()
+        Json::new()
     }
 }
 
-impl Format for JsonDeserializer {
+impl Format for Json {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
         serde_json::from_slice::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())

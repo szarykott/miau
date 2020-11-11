@@ -25,29 +25,22 @@ pub enum NodeType {
 }
 
 impl Node {
-    pub(crate) fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
+    pub fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
     where
         T: TryFrom<&'node Value, Error = ConfigurationError>,
     {
         self.get_result(keys).ok().unwrap_or_default()
     }
 
-    pub(crate) fn get_result<'a, T>(
-        &'a self,
-        keys: &CompoundKey,
-    ) -> Result<Option<T>, ConfigurationError>
+    pub fn get_result<'a, T>(&'a self, keys: &CompoundKey) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
-        let mut node = Result::Ok(self);
-        for key in keys.iter() {
-            // TODO: Export descend_many into method so that lens can use it!
-            node = node.and_then(|nd| nd.descend(key).map_err(|e| e.enrich_with_key(key.clone())));
-        }
-        node.and_then(|node| node.get_value::<T>())
+        self.descend_many(keys)
+            .and_then(|node| node.get_value::<T>())
     }
 
-    pub(crate) fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
+    pub fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
@@ -66,7 +59,15 @@ impl Node {
         }
     }
 
-    pub(crate) fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
+    pub fn descend_many(&self, keys: &CompoundKey) -> Result<&Node, ConfigurationError> {
+        let mut node = Result::Ok(self);
+        for key in keys.iter() {
+            node = node.and_then(|nd| nd.descend(key).map_err(|e| e.enrich_with_key(key.clone())));
+        }
+        node
+    }
+
+    pub fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
         match self {
             Node::Value(_) => match key {
                 Key::Array(_) => {
@@ -93,11 +94,11 @@ impl Node {
         }
     }
 
-    pub(crate) fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
+    pub fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
         T::deserialize(self)
     }
 
-    pub(crate) fn node_type(&self) -> NodeType {
+    pub fn node_type(&self) -> NodeType {
         match self {
             Node::Value(_) => NodeType::Value,
             Node::Map(_) => NodeType::Map,

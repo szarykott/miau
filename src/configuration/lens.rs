@@ -1,39 +1,51 @@
-use super::{CompoundKey, Node, Value};
+use super::{CompoundKey, Node, SingularConfiguration, Value};
 use crate::error::ConfigurationError;
 use serde::de::DeserializeOwned;
-use std::convert::TryFrom;
+use std::convert::{From, TryFrom, TryInto};
 
 /// Provides lensing capabilities to a configuration reader.
-/// Allowes scoping into configuration section of choice for read only access.
+/// Allows scoping into configuration section of choice for read only access.
 pub struct Lens<'config> {
     handle: &'config Node,
 }
 
 impl<'config> Lens<'config> {
-    pub fn lens(self, keys: &CompoundKey) -> Result<Self, ConfigurationError> {
-        let mut next = self.handle;
-        for key in keys.iter() {
-            next = next.descend(key)?;
-        }
-
-        Ok(Lens { handle: next })
+    pub(crate) fn new(node: &'config Node) -> Self {
+        Lens { handle: node }
     }
 
-    pub fn get_option<T>(&'config self, keys: &CompoundKey) -> Option<T>
+    pub fn try_lens<S>(&self, keys: S) -> Result<Self, ConfigurationError>
+    where
+        S: TryInto<CompoundKey, Error = ConfigurationError>,
+    {
+        Ok(Lens {
+            handle: self.handle.descend_many(&keys.try_into()?)?,
+        })
+    }
+
+    pub fn get<T, S>(&'config self, keys: S) -> Option<T>
     where
         T: TryFrom<&'config Value, Error = ConfigurationError>,
+        S: TryInto<CompoundKey>,
     {
-        self.handle.get_option(keys)
+        self.handle.get_option(&keys.try_into().ok()?)
     }
 
-    pub fn get_result<T>(&'config self, keys: &CompoundKey) -> Result<Option<T>, ConfigurationError>
+    pub fn get_result<T, S>(&'config self, keys: S) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'config Value, Error = ConfigurationError>,
+        S: TryInto<CompoundKey, Error = ConfigurationError>,
     {
-        self.handle.get_result(keys)
+        self.handle.get_result(&keys.try_into()?)
     }
 
-    pub fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
+    pub fn try_into<T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
         self.handle.try_into()
+    }
+}
+
+impl<'config> From<&'config SingularConfiguration> for Lens<'config> {
+    fn from(config: &'config SingularConfiguration) -> Self {
+        Lens::new(&config.root)
     }
 }

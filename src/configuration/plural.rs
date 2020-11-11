@@ -1,8 +1,8 @@
 use crate::{
-    configuration::{node, node::Node, CompoundKey, Value},
+    configuration::{node, node::Node, CompoundKey, SingularConfiguration, Value},
     error::{ConfigurationError, ErrorCode},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize};
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -15,27 +15,40 @@ pub struct Configuration {
     pub(crate) roots: Vec<Node>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(transparent)]
-pub struct SingularConfiguration {
-    pub(crate) root: Node,
-}
-
 impl Configuration {
-    // TODO: Should this be just `get`?
-    pub fn get_option<'a, T, S>(&'a self, keys: S) -> Option<T>
+    pub fn get<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
         S: TryInto<CompoundKey>,
     {
-        let keys = keys.try_into().ok()?;
-        self.roots
-            .iter()
-            .rev()
-            .find_map(|node| node.get_option::<T>(&keys))
+        self.get_result_internal(keys.try_into().ok()?)
+            .unwrap_or_default()
     }
 
-    // TODO: Add `get_result` method
+    pub fn get_result<'a, T, S>(&'a self, keys: S) -> Result<Option<T>, ConfigurationError>
+    where
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
+        S: TryInto<CompoundKey, Error = ConfigurationError>,
+    {
+        self.get_result_internal(keys.try_into()?)
+    }
+
+    /// Internal method is used so that `get_option` can not specify error of TryInto
+    fn get_result_internal<'a, T>(
+        &'a self,
+        keys: CompoundKey,
+    ) -> Result<Option<T>, ConfigurationError>
+    where
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
+    {
+        for candidate in self.roots.iter().rev() {
+            if let result @ Ok(_) = candidate.get_result::<T>(&keys) {
+                return result;
+            }
+        }
+
+        Ok(None)
+    }
 
     pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
         self.merge_owned()?.try_into()
@@ -50,14 +63,6 @@ impl Configuration {
             None => Err(ErrorCode::MissingValue.into()),
         }
     }
-
-    // TODO: Add `lens` method that will return reference to subtree of configuration
-}
-
-impl SingularConfiguration {
-    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
-        Node::try_into::<T>(&self.root)
-    }
 }
 
 impl Default for Configuration {
@@ -69,12 +74,6 @@ impl Default for Configuration {
 impl From<Node> for Configuration {
     fn from(node: Node) -> Self {
         Configuration { roots: vec![node] }
-    }
-}
-
-impl From<Node> for SingularConfiguration {
-    fn from(node: Node) -> Self {
-        SingularConfiguration { root: node }
     }
 }
 

@@ -1,5 +1,5 @@
 use configuration_rs::{
-    builder::ConfigurationBuilder, format::JsonDeserializer, provider::EnvironmentProvider,
+    builder::ConfigurationBuilder, format::Json, provider::EnvironmentProvider,
     source::InMemorySource,
 };
 use serde_json::json;
@@ -17,12 +17,12 @@ fn test_environment_source_no_prefix() {
 
     assert_eq!(
         Some("my_awesome_value"),
-        configuration.get_option("my_awesome_key")
+        configuration.get("my_awesome_key")
     );
 
     assert_eq!(
         Some("notmy_awesome_value"),
-        configuration.get_option("notmy_awesome_key")
+        configuration.get("notmy_awesome_key")
     );
 }
 
@@ -42,19 +42,16 @@ fn test_environment_source_compound_key() {
             .to_string()
             .as_ref(),
         ),
-        JsonDeserializer::default(),
+        Json::default(),
     );
     builder.add_provider(EnvironmentProvider::new());
 
     let configuration = builder.build().unwrap();
 
-    assert_eq!(
-        Some("first_value"),
-        configuration.get_option("t2_key:first_key")
-    );
+    assert_eq!(Some("first_value"), configuration.get("t2_key:first_key"));
     assert_eq!(
         Some("my_awesome_value"),
-        configuration.get_option("t2_key:another_key")
+        configuration.get("t2_key:another_key")
     );
 }
 
@@ -70,11 +67,11 @@ fn test_environment_source_with_prefix() {
 
     assert_eq!(
         Some("my_awesome_value"),
-        configuration.get_option("my_t3_awesome_key")
+        configuration.get("my_t3_awesome_key")
     );
 
     assert_eq!(
         None,
-        configuration.get_option::<&str, &str>("notmy_t3_awesome_key")
+        configuration.get::<&str, &str>("notmy_t3_awesome_key")
     );
 }

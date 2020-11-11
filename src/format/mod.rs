@@ -3,8 +3,8 @@ use crate::{configuration::Configuration, error::ConfigurationError};
 mod json;
 mod yaml;
 
-pub use json::JsonDeserializer;
-pub use yaml::YamlDeserializer;
+pub use json::Json;
+pub use yaml::Yaml;
 
 pub trait Format {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError>;

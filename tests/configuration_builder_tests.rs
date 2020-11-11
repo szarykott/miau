@@ -1,7 +1,7 @@
 mod utils;
 
 use configuration_rs::{
-    builder::ConfigurationBuilder, configuration::Configuration, format::JsonDeserializer, key,
+    builder::ConfigurationBuilder, configuration::Configuration, format::Json, key,
     source::InMemorySource,
 };
 use rstest::rstest;
@@ -15,16 +15,16 @@ fn test_arrays_are_subsituted_when_config_is_built() {
     let mut builder = ConfigurationBuilder::default();
 
     builder
-        .add(InMemorySource::from_str(json1), JsonDeserializer::new())
-        .add(InMemorySource::from_str(json2), JsonDeserializer::new())
-        .add(InMemorySource::from_str(json3), JsonDeserializer::new());
+        .add(InMemorySource::from_str(json1), Json::new())
+        .add(InMemorySource::from_str(json2), Json::new())
+        .add(InMemorySource::from_str(json3), Json::new());
 
     let confiuration = builder.build().unwrap();
 
-    assert_eq!(Some(7), confiuration.get_option("array1:[0]"));
-    assert_eq!(Some(6), confiuration.get_option("array1:[1]"));
-    assert_eq!(Some(3), confiuration.get_option("array1:[2]"));
-    assert_eq!(Some(4), confiuration.get_option("array1:[3]"));
+    assert_eq!(Some(7), confiuration.get("array1:[0]"));
+    assert_eq!(Some(6), confiuration.get("array1:[1]"));
+    assert_eq!(Some(3), confiuration.get("array1:[2]"));
+    assert_eq!(Some(4), confiuration.get("array1:[3]"));
 }
 
 #[rstest(
@@ -39,8 +39,8 @@ fn test_arrays_are_subsituted_when_config_is_built() {
 fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(c1), Json::new());
+    builder.add(InMemorySource::from_str(c2), Json::new());
 
     let result = builder.build();
 
@@ -48,7 +48,7 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
 
     let result = result.unwrap();
 
-    assert_eq!(Some(exp), result.get_option("value1"));
+    assert_eq!(Some(exp), result.get("value1"));
 }
 
 #[rstest(
@@ -63,12 +63,12 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
 fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(c1), Json::new());
+    builder.add(InMemorySource::from_str(c2), Json::new());
 
     let result = builder.build().unwrap();
 
-    assert_eq!(Some(exp), result.get_option("value1"));
+    assert_eq!(Some(exp), result.get("value1"));
 }
 
 #[rstest(
@@ -83,12 +83,12 @@ fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
 fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(c1), Json::new());
+    builder.add(InMemorySource::from_str(c2), Json::new());
 
     let result = builder.build().unwrap();
 
-    assert_eq!(Some(exp), result.get_option("value1"));
+    assert_eq!(Some(exp), result.get("value1"));
 }
 
 #[rstest(
@@ -103,12 +103,12 @@ fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
 fn test_type_to_string_substitution(c1: &str, c2: &str, exp: &str) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(c2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(c1), Json::new());
+    builder.add(InMemorySource::from_str(c2), Json::new());
 
     let result = builder.build().unwrap();
 
-    assert_eq!(Some(exp), result.get_option("value1"));
+    assert_eq!(Some(exp), result.get("value1"));
 }
 
 #[test]
@@ -121,8 +121,8 @@ fn test_single_value_integer_config_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(2i32), result.get_option(""));
-    assert_eq!(Some(2i32), result.get_option(key!()));
+    assert_eq!(Some(2i32), result.get(""));
+    assert_eq!(Some(2i32), result.get(key!()));
 }
 
 #[test]
@@ -135,8 +135,8 @@ fn test_single_map_entry_config_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(2), result.get_option("value"));
-    assert_eq!(Some(2), result.get_option(key!("value")));
+    assert_eq!(Some(2), result.get("value"));
+    assert_eq!(Some(2), result.get(key!("value")));
 }
 
 #[test]
@@ -151,8 +151,8 @@ fn test_single_map_entry_config_build_json_different_type() {
         .build()
         .unwrap();
 
-    assert_eq!(Some("2"), result.get_option("value"));
-    assert_eq!(Some(2), result.get_option("value"));
+    assert_eq!(Some("2"), result.get("value"));
+    assert_eq!(Some(2), result.get("value"));
 }
 
 #[test]
@@ -167,8 +167,8 @@ fn test_two_different_map_entries_config_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(1), result.get_option("value1"));
-    assert_eq!(Some(2), result.get_option("value2"));
+    assert_eq!(Some(1), result.get("value1"));
+    assert_eq!(Some(2), result.get("value2"));
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn test_single_array_entry_config_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(2), result.get_option("[0]"));
+    assert_eq!(Some(2), result.get("[0]"));
 }
 
 #[test]
@@ -232,12 +232,12 @@ fn test_complex_map_config_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some("Andrew"), result.get_option("firstName"));
-    assert_eq!(Some("Smith"), result.get_option("lastName"));
-    assert_eq!(Some(false), result.get_option("isAlive"));
-    assert_eq!(Some("Knowhere"), result.get_option("address:streetAddress"));
-    assert_eq!(Some("work"), result.get_option("phoneNumbers:[0]:type"));
-    assert_eq!(Some(true), result.get_option("spouse"));
+    assert_eq!(Some("Andrew"), result.get("firstName"));
+    assert_eq!(Some("Smith"), result.get("lastName"));
+    assert_eq!(Some(false), result.get("isAlive"));
+    assert_eq!(Some("Knowhere"), result.get("address:streetAddress"));
+    assert_eq!(Some("work"), result.get("phoneNumbers:[0]:type"));
+    assert_eq!(Some(true), result.get("spouse"));
 }
 
 #[test]
@@ -268,8 +268,8 @@ fn test_array_of_structs_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(12), result.get_option("array:[0]:k"));
-    assert_eq!(Some(33), result.get_option("array:[1]:k"));
+    assert_eq!(Some(12), result.get("array:[0]:k"));
+    assert_eq!(Some(33), result.get("array:[1]:k"));
 }
 
 #[test]
@@ -301,14 +301,14 @@ fn test_structs_of_arrays_build_json() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(11), result.get_option("structure:a1:[0]"));
-    assert_eq!(Some(42), result.get_option("structure:a1:[1]"));
-    assert_eq!(Some(3), result.get_option("structure:a1:[2]"));
-    assert_eq!(None, result.get_option::<i32, &str>("structure:a1:[3]"));
-    assert_eq!(Some(4), result.get_option("structure:a2:[0]"));
-    assert_eq!(Some(5), result.get_option("structure:a2:[1]"));
-    assert_eq!(Some(3), result.get_option("structure:a2:[2]"));
-    assert_eq!(None, result.get_option::<i32, &str>("structure:a2:[3]"));
+    assert_eq!(Some(11), result.get("structure:a1:[0]"));
+    assert_eq!(Some(42), result.get("structure:a1:[1]"));
+    assert_eq!(Some(3), result.get("structure:a1:[2]"));
+    assert_eq!(None, result.get::<i32, &str>("structure:a1:[3]"));
+    assert_eq!(Some(4), result.get("structure:a2:[0]"));
+    assert_eq!(Some(5), result.get("structure:a2:[1]"));
+    assert_eq!(Some(3), result.get("structure:a2:[2]"));
+    assert_eq!(None, result.get::<i32, &str>("structure:a2:[3]"));
 }
 
 #[test]
@@ -343,7 +343,7 @@ fn test_triple_nested_map_build() {
         .build()
         .unwrap();
 
-    assert_eq!(Some(false), result.get_option("key1:key2:key3"));
-    assert_eq!(Some(false), result.get_option("key1:key2:key4"));
-    assert_eq!(None, result.get_option::<i32, &str>("key1:key2:key5"));
+    assert_eq!(Some(false), result.get("key1:key2:key3"));
+    assert_eq!(Some(false), result.get("key1:key2:key4"));
+    assert_eq!(None, result.get::<i32, &str>("key1:key2:key5"));
 }

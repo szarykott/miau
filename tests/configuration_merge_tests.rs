@@ -1,6 +1,4 @@
-use configuration_rs::{
-    builder::ConfigurationBuilder, format::JsonDeserializer, source::InMemorySource,
-};
+use configuration_rs::{builder::ConfigurationBuilder, format::Json, source::InMemorySource};
 use rstest::rstest;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -34,14 +32,8 @@ use std::collections::HashMap;
 fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i32>) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(
-        InMemorySource::from_str(json1.as_ref()),
-        JsonDeserializer::new(),
-    );
-    builder.add(
-        InMemorySource::from_str(json2.as_ref()),
-        JsonDeserializer::new(),
-    );
+    builder.add(InMemorySource::from_str(json1.as_ref()), Json::new());
+    builder.add(InMemorySource::from_str(json2.as_ref()), Json::new());
 
     let confiuration = builder.build().unwrap();
 
@@ -64,8 +56,8 @@ fn test_maps_are_merged_simple() {
     let cfg2 = r#"{ "value2" : -1.1 }"#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(cfg2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(cfg1), Json::new());
+    builder.add(InMemorySource::from_str(cfg2), Json::new());
 
     let confiuration = builder.build().unwrap();
 
@@ -104,8 +96,8 @@ fn test_maps_are_merged_nested() {
     .trim();
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg1), JsonDeserializer::new());
-    builder.add(InMemorySource::from_str(cfg2), JsonDeserializer::new());
+    builder.add(InMemorySource::from_str(cfg1), Json::new());
+    builder.add(InMemorySource::from_str(cfg2), Json::new());
 
     let confiuration = builder.build().unwrap();
 

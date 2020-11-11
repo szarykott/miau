@@ -5,21 +5,21 @@ use crate::{
 };
 use std::default::Default;
 
-pub struct YamlDeserializer {}
+pub struct Yaml {}
 
-impl YamlDeserializer {
+impl Yaml {
     pub fn new() -> Self {
-        YamlDeserializer {}
+        Yaml {}
     }
 }
 
-impl Default for YamlDeserializer {
+impl Default for Yaml {
     fn default() -> Self {
-        YamlDeserializer::new()
+        Yaml::new()
     }
 }
 
-impl Format for YamlDeserializer {
+impl Format for Yaml {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
         serde_yaml::from_slice::<Configuration>(&input)
             .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())

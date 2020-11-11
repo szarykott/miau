@@ -45,6 +45,8 @@ impl Display for Category {
     }
 }
 
+// TODO: Rethink errors in here!
+// Maybe split them per module and only aggregate here?
 #[derive(Debug)]
 pub enum ErrorCode {
     UnexpectedNodeType(NodeType, NodeType),

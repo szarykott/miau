@@ -30,6 +30,7 @@ fn test_basic_lens() {
     let lens = configuration.try_lens("map:entry").unwrap();
 
     assert_eq!(Some(true), lens.get("value1"));
+    assert_eq!(Some("true"), lens.get("value1"));
     assert_eq!(Some(1), lens.get("value2:array:[0]"));
 }
 

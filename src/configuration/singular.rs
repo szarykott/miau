@@ -12,7 +12,6 @@ pub struct SingularConfiguration {
 }
 
 impl SingularConfiguration {
-    // TODO: Maybe get_option and get_result should be in trait or sth
     pub fn get<'config, T, S>(&'config self, keys: S) -> Option<T>
     where
         T: TryFrom<&'config Value, Error = ConfigurationError>,

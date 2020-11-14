@@ -12,6 +12,17 @@ pub enum Value {
     Float(f64),
 }
 
+impl Value {
+    pub fn display_type(&self) -> &str {
+        match self {
+            Value::String(_) => "string",
+            Value::Bool(_) => "bool",
+            Value::SignedInteger(_) => "integer",
+            Value::Float(_) => "float",
+        }
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -84,7 +95,10 @@ impl TryFrom<&Value> for bool {
                 } else if vlc == "0" || vlc == "false" {
                     Ok(false)
                 } else {
-                    Err(ErrorCode::UnexpectedValueType("bool".into(), "string".into()).into())
+                    Err(
+                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible string".into())
+                            .into(),
+                    )
                 }
             }
             Value::Bool(v) => Ok(*v),
@@ -94,7 +108,10 @@ impl TryFrom<&Value> for bool {
                 } else if v == &0 {
                     Ok(false)
                 } else {
-                    Err(ErrorCode::UnexpectedValueType("bool".into(), "i64".into()).into())
+                    Err(
+                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible i64".into())
+                            .into(),
+                    )
                 }
             }
             Value::Float(v) => {
@@ -103,14 +120,16 @@ impl TryFrom<&Value> for bool {
                 } else if v == &0f64 {
                     Ok(false)
                 } else {
-                    Err(ErrorCode::UnexpectedValueType("bool".into(), "f64".into()).into())
+                    Err(
+                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible f64".into())
+                            .into(),
+                    )
                 }
             }
         }
     }
 }
 
-// TODO: This could be From
 impl TryFrom<&Value> for String {
     type Error = ConfigurationError;
 
@@ -137,7 +156,11 @@ impl<'conf> TryFrom<&'conf Value> for &'conf str {
                     Ok("false")
                 }
             }
-            _ => Err(ErrorCode::UnexpectedValueType("".into(), "".into()).into()), //TODO: Fix it
+            other => Err(ErrorCode::UnexpectedValueType(
+                "string or bool".into(),
+                other.display_type().into(),
+            )
+            .into()),
         }
     }
 }

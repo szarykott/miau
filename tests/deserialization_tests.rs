@@ -1,4 +1,4 @@
-use configuration_rs::configuration::Configuration;
+use configuration_rs::{configuration::Configuration, error::Category};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -55,6 +55,26 @@ fn test_deserialization_all_simple_types() {
     assert_eq!(1.1, config.float32);
     assert_eq!(1.2, config.float64);
     assert_eq!((), config.unit);
+}
+
+#[test]
+fn test_deserialization_fails_when_types_do_not_match() {
+    #[derive(Deserialize, Debug)]
+    struct Config {
+        value: u32,
+    }
+
+    let cfg_str = serde_json::json!({
+        "not_a_value" : "string"
+    })
+    .to_string();
+
+    let root = serde_json::from_str::<Configuration>(&cfg_str).unwrap();
+    let error = root.try_into::<Config>().unwrap_err();
+
+    println!("{:#?}", error);
+
+    assert!(std::matches!(error.category(), Category::Deserialization));
 }
 
 #[test]

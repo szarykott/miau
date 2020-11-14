@@ -22,6 +22,6 @@ impl Default for Yaml {
 impl Format for Yaml {
     fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
         serde_yaml::from_slice::<Configuration>(&input)
-            .map_err(|e| ErrorCode::SerdeError(e.to_string()).into())
+            .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
     }
 }

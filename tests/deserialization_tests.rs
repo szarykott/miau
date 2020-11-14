@@ -72,7 +72,7 @@ fn test_deserialization_fails_when_types_do_not_match() {
     let root = serde_json::from_str::<Configuration>(&cfg_str).unwrap();
     let error = root.try_into::<Config>().unwrap_err();
 
-    println!("{:#?}", error);
+    println!("{}", error);
 
     assert!(std::matches!(error.category(), Category::Deserialization));
 }

@@ -95,7 +95,12 @@ impl Node {
     }
 
     pub fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
-        T::deserialize(self)
+        T::deserialize(self).map_err(|e| {
+            e.enrich_with_context(format!(
+                "Failed to deserialize configuration to type {}",
+                std::any::type_name::<T>()
+            ))
+        })
     }
 
     pub fn node_type(&self) -> NodeType {

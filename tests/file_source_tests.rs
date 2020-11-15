@@ -1,5 +1,6 @@
 use configuration_rs::{
     builder::ConfigurationBuilder,
+    error::ErrorCode,
     format::{Json, Yaml},
     source::FileSource,
 };
@@ -45,9 +46,13 @@ fn test_missing_file_source() {
     let path: PathBuf = ["tests", "files", "not_present.json"].iter().collect();
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(FileSource::from_path(path), Json::default());
+    builder.add(FileSource::from_path(path.clone()), Json::default());
 
-    let configuration = builder.build();
+    let error = builder.build().unwrap_err();
 
-    assert!(configuration.is_err());
+    println!("{}", error);
+
+    assert!(std::matches!(error.get_code(), ErrorCode::IoError(..)));
+    let error_string = error.to_string();
+    assert!(error_string.contains(&path.display().to_string()))
 }

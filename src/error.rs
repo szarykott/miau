@@ -1,6 +1,6 @@
 use crate::configuration::{Key, NodeType};
 use serde::de;
-use std::{convert::From, fmt::Display};
+use std::{convert::From, fmt::Display, ops::Deref};
 
 #[derive(Debug)]
 pub struct ConfigurationError {
@@ -8,25 +8,13 @@ pub struct ConfigurationError {
 }
 
 #[derive(Debug)]
-struct ErrorImpl {
+pub struct ErrorImpl {
     code: ErrorCode,
     context: Option<Vec<String>>,
     path: Option<Vec<Key>>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum Category {
-    ConfigurationAccess,
-    ConfigurationMerge,
-    SourceCollection,
-    /// Category of errors that occur during deserialization.
-    /// It covers external sources and internal library's structures deserialization.
-    Deserialization,
-    Other,
-}
-
 // TODO: Rethink errors in here!
-// Maybe split them per module and only aggregate here?
 #[derive(Debug)]
 pub enum ErrorCode {
     UnexpectedNodeType(NodeType, NodeType),
@@ -34,31 +22,21 @@ pub enum ErrorCode {
     IndexOutOfRange(usize),
     WrongKeyType(String),
     KeyNotFound(String),
-    IncompatibleNodeSubstitution(NodeType, NodeType),
-    IncompatibleValueSubstitution(String, String),
+    /// Informs about errors during merging configuration nodes.
+    /// Might occur in circumstances like merging map node with array node.
+    BadMerge(NodeType, NodeType),
+    /// Informs about different kinds of input/output errors.
+    /// Occurs mostly during source collection e.g. reading file or downloading content over network.
     IoError(std::io::Error),
+    /// Informs about errors during deserialization.
+    /// It covers both external sources and internal structures deserialization.
     DeserializationError(String),
     MissingValue,
+    /// Informs about parsing error that occured.
     ParsingError(String),
 }
 
 impl ConfigurationError {
-    pub fn category(&self) -> Category {
-        match self.inner.code {
-            ErrorCode::UnexpectedNodeType(_, _)
-            | ErrorCode::UnexpectedValueType(_, _)
-            | ErrorCode::IndexOutOfRange(_)
-            | ErrorCode::WrongKeyType(_)
-            | ErrorCode::MissingValue
-            | ErrorCode::ParsingError(_)
-            | ErrorCode::KeyNotFound(_) => Category::ConfigurationAccess,
-            ErrorCode::IncompatibleNodeSubstitution(_, _)
-            | ErrorCode::IncompatibleValueSubstitution(_, _) => Category::ConfigurationMerge,
-            ErrorCode::IoError(_) => Category::SourceCollection,
-            ErrorCode::DeserializationError(_) => Category::Deserialization,
-        }
-    }
-
     pub fn inner(&self) -> &ErrorCode {
         &self.inner.code
     }
@@ -86,53 +64,76 @@ impl ConfigurationError {
     }
 }
 
+impl ErrorImpl {
+    pub fn get_code(&self) -> &ErrorCode {
+        &self.code
+    }
+
+    pub fn get_path(&self) -> Option<&[Key]> {
+        if let Some(ref path) = self.path {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_context(&self) -> Option<&[String]> {
+        if let Some(ref context) = self.context {
+            Some(context)
+        } else {
+            None
+        }
+    }
+}
+
 struct KeyVec<'v>(&'v [Key]);
 
 impl<'v> Display for KeyVec<'v> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for key in self.0.iter() {
-            write!(f, " {} ", key)?;
+        let mut first = true;
+        for key in self.0.iter().rev() {
+            if first {
+                write!(f, "{}", key)?;
+                first = false;
+                continue;
+            }
+            write!(f, "-->{}", key)?;
         }
         Ok(())
     }
 }
 
-impl Display for Category {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Category::ConfigurationAccess => write!(f, "configuration access"),
-            Category::ConfigurationMerge => write!(f, "configuration merge"),
-            Category::SourceCollection => write!(f, "source collection"),
-            Category::Deserialization => write!(f, "deserialization"),
-            Category::Other => write!(f, "other"),
-        }
+impl Deref for ConfigurationError {
+    type Target = ErrorImpl;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
+// TODO: Make this display messages in one line and create additional wrapper PrettyDisplay so that error message is nice to all users
 impl Display for ConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Error category : {}", self.category())?;
+        write!(f, "{}", &self.inner.code)?;
 
-        match self.category() {
-            Category::ConfigurationAccess
-            | Category::ConfigurationMerge
-            | Category::Deserialization => {
-                if let Some(ref path) = self.inner.path {
-                    writeln!(f, "Path : {}", KeyVec(path))?;
-                }
-            }
-            _ => {}
+        if let Some(ref path) = self.inner.path {
+            writeln!(f, "Path : {}", KeyVec(path))?;
         }
-
-        writeln!(f, "Cause: ")?;
 
         if let Some(ref context) = self.inner.context {
+            writeln!(f, "Context: ")?;
             for msg in context.iter() {
-                writeln!(f, "{}", msg)?;
+                writeln!(f, "\t{}", msg)?;
             }
         }
 
-        match &self.inner.code {
+        Ok(())
+    }
+}
+
+impl Display for ErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
             ErrorCode::UnexpectedNodeType(exp, act) => {
                 writeln!(f, "Unexpected node type. Expected {}, got {}.", exp, act)
             }
@@ -144,18 +145,15 @@ impl Display for ConfigurationError {
             }
             ErrorCode::WrongKeyType(k) => writeln!(f, "Got key of wrong type. Got key {}.", k),
             ErrorCode::KeyNotFound(k) => writeln!(f, "Unable to find key {}.", k),
-            ErrorCode::IncompatibleNodeSubstitution(a, b) => {
-                writeln!(f, "It is forbidden to substitute {} for {}.", a, b)
+            ErrorCode::BadMerge(a, b) => {
+                writeln!(f, "It is forbidden to substitute {} for {}.", b, a)
             }
-            ErrorCode::IncompatibleValueSubstitution(a, b) => {
-                writeln!(f, "It is forbidden to substitute {} for {}.", a, b)
-            }
-            ErrorCode::IoError(e) => writeln!(f, "IO error occurred. Error : {}.", e),
+            ErrorCode::IoError(e) => writeln!(f, "I/O error occurred. {}.", e),
             ErrorCode::DeserializationError(e) => {
                 writeln!(f, "Deserialization error occured : {}.", e)
             }
             ErrorCode::MissingValue => writeln!(f, "Missing a value."),
-            ErrorCode::ParsingError(msg) => writeln!(f, "Error while parsing : {}", msg),
+            ErrorCode::ParsingError(msg) => writeln!(f, "Parsing error. {}", msg),
         }
     }
 }

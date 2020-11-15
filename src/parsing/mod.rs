@@ -18,7 +18,7 @@ pub(crate) fn str_to_key(input: &str) -> Result<CompoundKey, ConfigurationError>
             let trimmed_key = trimmed_key[1..trimmed_key.len() - 1].trim();
             match trimmed_key.parse::<usize>() {
                 Ok(i) => result.push(Key::Array(i)),
-                Err(e) => return Err(ErrorCode::ParsingError(e.to_string()).into()),
+                Err(e) => return Err(ErrorCode::ParsingError(format!("Error occured while parsing `{}` : {}", trimmed_key, e.to_string()).into()).into()),
             }
         } else {
             result.push(Key::Map(trimmed_key.to_owned()))

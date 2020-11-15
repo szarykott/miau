@@ -20,9 +20,20 @@ impl FileSource {
 
 impl Source for FileSource {
     fn collect(&self) -> Result<Vec<u8>, ConfigurationError> {
-        let mut f = File::open(&self.path)?;
         let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer)?;
+
+        let mut f = File::open(&self.path)
+            .map_err(|e| -> ConfigurationError { e.into() })
+            .map_err(|e| {
+                e.enrich_with_context(format!("Failed to open file : {}", self.path.display()))
+            })?;
+
+        f.read_to_end(&mut buffer)
+            .map_err(|e| -> ConfigurationError { e.into() })
+            .map_err(|e| {
+                e.enrich_with_context(format!("Failed to read file : {}", self.path.display()))
+            })?;
+
         Ok(buffer)
     }
 }

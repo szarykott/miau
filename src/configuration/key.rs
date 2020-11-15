@@ -56,6 +56,7 @@ impl TryFrom<&str> for CompoundKey {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         parsing::str_to_key(value)
+            .map_err(|e| e.enrich_with_context(format!("Parsing key `{}` failed", value)))
     }
 }
 
@@ -64,14 +65,15 @@ impl TryFrom<String> for CompoundKey {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         parsing::str_to_key(value.as_ref())
+            .map_err(|e| e.enrich_with_context(format!("Parsing key `{}` failed", value)))
     }
 }
 
 impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Key::Array(i) => write!(f, "Key::Array({})", i),
-            Key::Map(k) => write!(f, "Key::Map({})", k),
+            Key::Array(i) => write!(f, "`[{}]`", i),
+            Key::Map(k) => write!(f, "{}", k),
         }
     }
 }

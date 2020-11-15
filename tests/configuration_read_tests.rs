@@ -1,8 +1,8 @@
 mod utils;
 
 use configuration_rs::{
-    builder::ConfigurationBuilder, configuration::Configuration, format::Json, key,
-    source::InMemorySource,
+    builder::ConfigurationBuilder, configuration::Configuration, error::ErrorCode, format::Json,
+    key, source::InMemorySource,
 };
 use rstest::rstest;
 
@@ -25,6 +25,86 @@ fn test_arrays_are_subsituted_when_config_is_built() {
     assert_eq!(Some(6), confiuration.get("array1:[1]"));
     assert_eq!(Some(3), confiuration.get("array1:[2]"));
     assert_eq!(Some(4), confiuration.get("array1:[3]"));
+}
+
+#[test]
+fn test_array_to_map_substitution() {
+    let json1 = r#"{"key" : [7]}"#;
+    let json2 = r#"{"key" : { "key" : 7 }}"#;
+
+    let mut builder = ConfigurationBuilder::default();
+
+    builder
+        .add(InMemorySource::from_str(json1), Json::new())
+        .add(InMemorySource::from_str(json2), Json::new());
+
+    let configuration = builder.build().unwrap();
+
+    assert_eq!(Some(7), configuration.get("key:[0]"));
+    assert_eq!(Some(7), configuration.get("key:key"));
+}
+
+#[test]
+fn test_map_to_array_substitution() {
+    let json1 = r#"{"key" : { "key" : 7 }}"#;
+    let json2 = r#"{"key" : [7]}"#;
+
+    let mut builder = ConfigurationBuilder::default();
+
+    builder
+        .add(InMemorySource::from_str(json1), Json::new())
+        .add(InMemorySource::from_str(json2), Json::new());
+
+    let configuration = builder.build().unwrap();
+
+    assert_eq!(Some(7), configuration.get("key:[0]"));
+    assert_eq!(Some(7), configuration.get("key:key"));
+}
+
+#[test]
+fn test_get_result_non_existing_key() {
+    let json1 = r#"{"key" : { "key" : 7 }}"#;
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(json1), Json::new());
+
+    let configuration = builder.build().unwrap();
+
+    let value = configuration.get_result::<i32, &str>("value").unwrap();
+
+    assert_eq!(None, value);
+}
+
+#[test]
+fn test_get_result_wrong_key_type() {
+    let json1 = r#"{"key" : { "key" : "not_a_number" }}"#;
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(json1), Json::new());
+
+    let configuration = builder.build().unwrap();
+
+    let value = configuration.get_result::<i32, &str>("key:key").unwrap();
+
+    assert_eq!(None, value);
+}
+
+#[test]
+fn test_get_result_key_unparsable() {
+    let json1 = r#"{"key" : { "key" : "not_a_number" }}"#;
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(json1), Json::new());
+
+    let configuration = builder.build().unwrap();
+
+    let key = "key:[A]:key";
+    let error = configuration.get_result::<i32, &str>(key).unwrap_err();
+
+    let error_string = error.to_string();
+
+    assert!(std::matches!(error.get_code(), ErrorCode::ParsingError(..)));
+    assert!(error_string.contains(key));
 }
 
 #[rstest(

@@ -1,4 +1,6 @@
-use configuration_rs::{builder::ConfigurationBuilder, format::Json, source::InMemorySource};
+use configuration_rs::{
+    builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource,
+};
 use rstest::rstest;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -105,4 +107,68 @@ fn test_maps_are_merged_nested() {
 
     assert_eq!(result.value1.value1, 13);
     assert_eq!(result.value2, -1.1);
+}
+
+#[rstest(
+    cfg1,
+    cfg2,
+    exp_key,
+    exp_for,
+    case(
+        r#"{"this_is_key" : 1}"#,
+        r#"{"this_is_key" : [1]}"#,
+        "this_is_key",
+        "array for value"
+    ),
+    case(
+        r#"{"this_is_key" : {"key" : 1}}"#,
+        r#"{"this_is_key" : [1]}"#,
+        "this_is_key",
+        "array for map"
+    ),
+    case(
+        r#"{"this_is_key" : 1}"#,
+        r#"{"this_is_key" : {"key" : 1}}"#,
+        "this_is_key",
+        "map for value"
+    ),
+    // one below is double to assert other key message
+    case(
+        r#"{"this_is_key" : { "key2" :  [1]} }"#,
+        r#"{"this_is_key" : { "key2" :  {"key3" : 1}} }"#,
+        "this_is_key-->key2",
+        "map for array"
+    ),
+    case(
+        r#"{"this_is_key" : [1]}"#,
+        r#"{"this_is_key" : {"key" : 1}}"#,
+        "this_is_key",
+        "map for array"
+    ),
+    case(
+        r#"{"this_is_key" : [1]}"#,
+        r#"{"this_is_key" : 1}"#,
+        "this_is_key",
+        "value for array"
+    ),
+    case(
+        r#"{"this_is_key":{"key":1}}"#,
+        r#"{"this_is_key":1}"#,
+        "this_is_key",
+        "value for map"
+    )
+)]
+fn test_merges_error_messages(cfg1: &str, cfg2: &str, exp_key: &str, exp_for: &str) {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(cfg1), Json::new());
+    builder.add(InMemorySource::from_str(cfg2), Json::new());
+
+    let confiuration = builder.build().unwrap();
+
+    let error = confiuration.merge_owned().unwrap_err();
+
+    assert!(std::matches!(error.get_code(), ErrorCode::BadMerge(..)));
+    let error_string = error.to_string();
+    assert!(error_string.contains(exp_key));
+    assert!(error_string.contains(exp_for));
 }

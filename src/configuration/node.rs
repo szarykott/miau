@@ -117,9 +117,7 @@ pub(crate) fn merge(previous: Node, next: Node) -> Result<Node, ConfigurationErr
         (_, vn @ Node::Value(_)) => Ok(vn.clone()),
         (Node::Map(mp), Node::Map(mn)) => Ok(Node::Map(merge_maps(mp, mn)?)),
         (Node::Array(vp), Node::Array(vn)) => Ok(Node::Array(merge_arrays(vp, vn))),
-        (vp, vm) => {
-            Err(ErrorCode::IncompatibleNodeSubstitution(vp.node_type(), vm.node_type()).into())
-        }
+        (vp, vm) => Err(ErrorCode::BadMerge(vp.node_type(), vm.node_type()).into()),
     }
 }
 
@@ -137,17 +135,24 @@ fn merge_maps<'p>(
                     previous.insert(key.clone(), vn.clone());
                 }
                 (Node::Map(mp), Node::Map(mn)) => {
-                    previous.insert(key.clone(), Node::Map(merge_maps(mp, mn)?));
+                    previous.insert(
+                        key.clone(),
+                        Node::Map(
+                            merge_maps(mp, mn)
+                                .map_err(|e| e.enrich_with_key(Key::Map(key.clone())))?,
+                        ),
+                    );
                 }
                 (Node::Array(vp), Node::Array(vn)) => {
                     previous.insert(key.clone(), Node::Array(merge_arrays(vp, vn)));
                 }
                 (vp, vn) => {
-                    return Err(ErrorCode::IncompatibleNodeSubstitution(
-                        vp.node_type(),
-                        vn.node_type(),
-                    )
-                    .into())
+                    let error: ConfigurationError =
+                        ErrorCode::BadMerge(vp.node_type(), vn.node_type()).into();
+
+                    return Err(error
+                        .enrich_with_context("Failed to merge maps")
+                        .enrich_with_key(Key::Map(key.clone())));
                 }
             }
         }

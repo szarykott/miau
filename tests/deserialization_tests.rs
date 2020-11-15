@@ -1,4 +1,7 @@
-use configuration_rs::{configuration::Configuration, error::Category};
+use configuration_rs::{
+    builder::ConfigurationBuilder, configuration::Configuration, error::ErrorCode, format::Json,
+    source::InMemorySource,
+};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -58,23 +61,42 @@ fn test_deserialization_all_simple_types() {
 }
 
 #[test]
-fn test_deserialization_fails_when_types_do_not_match() {
+fn test_error_when_deserializing_internal_struct_fails() {
     #[derive(Deserialize, Debug)]
     struct Config {
-        value: u32,
+        some_integer_field: u32,
     }
 
     let cfg_str = serde_json::json!({
-        "not_a_value" : "string"
+        "these_are_not_the_droids_you_are_looking_for" : "string"
     })
     .to_string();
 
     let root = serde_json::from_str::<Configuration>(&cfg_str).unwrap();
     let error = root.try_into::<Config>().unwrap_err();
 
-    println!("{}", error);
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::DeserializationError(..)
+    ));
+    let error_stringified = error.to_string();
+    assert!(error_stringified.contains("some_integer_field"));
+    assert!(error_stringified.contains(&format!("{}", std::any::type_name::<Config>())));
+}
 
-    assert!(std::matches!(error.category(), Category::Deserialization));
+#[test]
+fn test_error_when_deserializing_external_source_fails() {
+    let cfg_str = r#" this is not json asdas1211/// "#;
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(cfg_str), Json::default());
+
+    let error = builder.build().unwrap_err();
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::DeserializationError(..)
+    ));
 }
 
 #[test]

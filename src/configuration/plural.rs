@@ -60,7 +60,10 @@ impl Configuration {
             Some(node) => roots
                 .try_fold(node, |acc, next| node::merge(acc, next))
                 .map(|final_node| SingularConfiguration { root: final_node }),
-            None => Err(ErrorCode::MissingValue.into()),
+            None => {
+                let error: ConfigurationError = ErrorCode::EmptyConfiguration.into();
+                Err(error.enrich_with_context("Failed to merge configurations"))
+            }
         }
     }
 }

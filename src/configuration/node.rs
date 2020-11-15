@@ -37,7 +37,7 @@ impl Node {
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
         self.descend_many(keys)
-            .and_then(|node| node.get_value::<T>())
+            .and_then(|node| node.get_value::<T>().map_err(|e| e.enrich_with_keys(keys)))
     }
 
     pub fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
@@ -51,31 +51,36 @@ impl Node {
             },
             Node::Value(None) => Ok(None),
             Node::Array(_) => {
-                Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Array).into())
+                Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
-            Node::Map(_) => {
-                Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Map).into())
-            }
+            Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
         }
     }
 
     pub fn descend_many(&self, keys: &CompoundKey) -> Result<&Node, ConfigurationError> {
-        let mut node = Result::Ok(self);
-        for key in keys.iter() {
-            node = node.and_then(|nd| nd.descend(key).map_err(|e| e.enrich_with_key(key.clone())));
+        Result::Ok(self).and_then(|n| n.descend_iter(keys.iter()))
+    }
+
+    fn descend_iter<'a>(
+        &self,
+        mut kiter: impl Iterator<Item = &'a Key>,
+    ) -> Result<&Node, ConfigurationError> {
+        match kiter.next() {
+            Some(key) => self
+                .descend(key)
+                .and_then(|n| n.descend_iter(kiter))
+                .map_err(|e| e.enrich_with_key(key.clone())),
+            None => Ok(self),
         }
-        node
     }
 
     pub fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
         match self {
             Node::Value(_) => match key {
                 Key::Array(_) => {
-                    Err(ErrorCode::UnexpectedNodeType(NodeType::Array, NodeType::Value).into())
+                    Err(ErrorCode::WrongNodeType(NodeType::Array, NodeType::Value).into())
                 }
-                Key::Map(_) => {
-                    Err(ErrorCode::UnexpectedNodeType(NodeType::Map, NodeType::Value).into())
-                }
+                Key::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Map, NodeType::Value).into()),
             },
             Node::Array(array) => match key {
                 Key::Array(index) => match array.get(*index) {
@@ -117,7 +122,7 @@ pub(crate) fn merge(previous: Node, next: Node) -> Result<Node, ConfigurationErr
         (_, vn @ Node::Value(_)) => Ok(vn.clone()),
         (Node::Map(mp), Node::Map(mn)) => Ok(Node::Map(merge_maps(mp, mn)?)),
         (Node::Array(vp), Node::Array(vn)) => Ok(Node::Array(merge_arrays(vp, vn))),
-        (vp, vm) => Err(ErrorCode::BadMerge(vp.node_type(), vm.node_type()).into()),
+        (vp, vm) => Err(ErrorCode::BadNodeMerge(vp.node_type(), vm.node_type()).into()),
     }
 }
 
@@ -148,7 +153,7 @@ fn merge_maps<'p>(
                 }
                 (vp, vn) => {
                     let error: ConfigurationError =
-                        ErrorCode::BadMerge(vp.node_type(), vn.node_type()).into();
+                        ErrorCode::BadNodeMerge(vp.node_type(), vn.node_type()).into();
 
                     return Err(error
                         .enrich_with_context("Failed to merge maps")
@@ -194,9 +199,9 @@ macro_rules! try_from_for {
             fn try_from(value: &Node) -> Result<Self, Self::Error> {
                 match value {
                     Node::Value(Some(tv)) => tv.try_into(),
-                    Node::Value(None) => Err(ErrorCode::MissingValue.into()),
-                    Node::Map(_) => Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Map).into()),
-                    Node::Array(_) => Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Array).into()),
+                    Node::Value(None) => Err(ErrorCode::NullValue.into()),
+                    Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
+                    Node::Array(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into()),
                 }
             }
         })*
@@ -212,11 +217,9 @@ impl<'conf> TryFrom<&'conf Node> for &'conf str {
         match value {
             Node::Value(Some(tv)) => tv.try_into(),
             Node::Value(None) => Ok(""),
-            Node::Map(_) => {
-                Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Map).into())
-            }
+            Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
             Node::Array(_) => {
-                Err(ErrorCode::UnexpectedNodeType(NodeType::Value, NodeType::Array).into())
+                Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
         }
     }

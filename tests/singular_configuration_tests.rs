@@ -1,4 +1,6 @@
-use configuration_rs::{builder::ConfigurationBuilder, format::Json, source::InMemorySource};
+use configuration_rs::{
+    builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource,
+};
 use serde::Deserialize;
 
 static TEST_JSON: &'static str = r#"
@@ -9,7 +11,8 @@ static TEST_JSON: &'static str = r#"
             "value2": {
                 "array" : [1,2],
                 "value3": "a"
-            }
+            },
+            "value3": "sdada"
         }
     }
 }"#;
@@ -54,4 +57,78 @@ fn test_singular_configuration_into_struct() {
     assert!(vec![1, 2].iter().eq(config.array.iter()));
     assert_eq!("a", config.value3);
     assert_eq!(None, config.optional);
+}
+
+#[test]
+fn test_singular_configuration_wrong_type_conversion() {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+
+    let configuration = builder.build().unwrap().merge_owned().unwrap();
+
+    let error = configuration
+        .get_result::<i32, &str>("map:entry:value3")
+        .unwrap_err(); // value1 is string
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::WrongValueType(..)
+    ));
+    let error_string = error.to_string();
+    assert!(error_string.contains("map-->entry-->value3"))
+}
+
+#[test]
+fn test_singluar_configuration_index_out_of_range() {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+
+    let configuration = builder.build().unwrap().merge_owned().unwrap();
+
+    let error = configuration
+        .get_result::<i32, &str>("map:entry:value2:array:[66]")
+        .unwrap_err();
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::IndexOutOfRange(..)
+    ));
+    let error_string = error.to_string();
+    assert!(error_string.contains("map-->entry-->value2-->array-->[66]"))
+}
+
+#[test]
+fn test_singluar_configuration_key_not_found() {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+
+    let configuration = builder.build().unwrap().merge_owned().unwrap();
+
+    let error = configuration
+        .get_result::<i32, &str>("map:entry:value2:arrayy:[66]") // typo in array
+        .unwrap_err();
+
+    assert!(std::matches!(error.get_code(), ErrorCode::KeyNotFound(..)));
+    let error_string = error.to_string();
+    println!("{}", error_string);
+    assert!(error_string.contains("map-->entry-->value2-->arrayy"))
+}
+
+#[test]
+fn test_singluar_configuration_descending_into_non_descendable() {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+
+    let configuration = builder.build().unwrap().merge_owned().unwrap();
+
+    let error = configuration
+        .get_result::<i32, &str>("map:entry:value1:[66]") // trying to index into bool
+        .unwrap_err();
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::WrongNodeType(..)
+    ));
+    let error_string = error.to_string();
+    assert!(error_string.contains("map-->entry-->value1-->[66]"))
 }

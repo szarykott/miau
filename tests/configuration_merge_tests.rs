@@ -158,7 +158,7 @@ fn test_maps_are_merged_nested() {
         "value for map"
     )
 )]
-fn test_merges_error_messages(cfg1: &str, cfg2: &str, exp_key: &str, exp_for: &str) {
+fn test_node_merge_error_messages(cfg1: &str, cfg2: &str, exp_key: &str, exp_for: &str) {
     let mut builder = ConfigurationBuilder::default();
     builder.add(InMemorySource::from_str(cfg1), Json::new());
     builder.add(InMemorySource::from_str(cfg2), Json::new());
@@ -167,8 +167,25 @@ fn test_merges_error_messages(cfg1: &str, cfg2: &str, exp_key: &str, exp_for: &s
 
     let error = confiuration.merge_owned().unwrap_err();
 
-    assert!(std::matches!(error.get_code(), ErrorCode::BadMerge(..)));
+    assert!(std::matches!(error.get_code(), ErrorCode::BadNodeMerge(..)));
     let error_string = error.to_string();
     assert!(error_string.contains(exp_key));
     assert!(error_string.contains(exp_for));
+}
+
+#[test]
+fn test_merge_empty_configuration_is_error() {
+    let mut builder = ConfigurationBuilder::default();
+    let configuration = builder.build().unwrap();
+
+    let error = configuration.merge_owned().unwrap_err();
+
+    println!("{}", error);
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::EmptyConfiguration
+    ));
+    assert!(error.get_context().is_some());
+    assert!(!error.get_context().unwrap().is_empty())
 }

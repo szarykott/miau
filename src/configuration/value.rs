@@ -43,15 +43,15 @@ macro_rules! try_from_for_int {
                 fn try_from(value: &Value) -> Result<Self, Self::Error> {
                     match value {
                         Value::String(v) => v.parse::<$t>()
-                            .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "string".into()).into()),
+                            .map_err(|_| ErrorCode::WrongValueType(stringify!($t).into(), "string".into()).into()),
                         Value::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
                         Value::SignedInteger(v) => (*v).try_into()
-                            .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "i64".into()).into()),
+                            .map_err(|_| ErrorCode::WrongValueType(stringify!($t).into(), "i64".into()).into()),
                         Value::Float(v) => {
                             if *v <= <$t>::MAX as f64 {
                                 Ok(*v as $t)
                             } else {
-                                Err(ErrorCode::UnexpectedValueType(stringify!($t).into(), "f64".into()).into())
+                                Err(ErrorCode::WrongValueType(stringify!($t).into(), "f64".into()).into())
                             }
                         }
                     }
@@ -71,7 +71,7 @@ macro_rules! try_from_for_float {
                 fn try_from(value: &Value) -> Result<Self, Self::Error> {
                     match value {
                         Value::String(v) => v.parse::<$t>()
-                            .map_err(|_| ErrorCode::UnexpectedValueType(stringify!($t).into(), "string".into()).into()),
+                            .map_err(|_| ErrorCode::WrongValueType(stringify!($t).into(), "string".into()).into()),
                         Value::Bool(v) => Ok(if v == &true { 1 as $t } else { 0 as $t }),
                         Value::SignedInteger(v) => Ok(*v as $t),
                         Value::Float(v) => Ok(*v as $t)
@@ -96,7 +96,7 @@ impl TryFrom<&Value> for bool {
                     Ok(false)
                 } else {
                     Err(
-                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible string".into())
+                        ErrorCode::WrongValueType("bool".into(), "incompatible string".into())
                             .into(),
                     )
                 }
@@ -108,10 +108,7 @@ impl TryFrom<&Value> for bool {
                 } else if v == &0 {
                     Ok(false)
                 } else {
-                    Err(
-                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible i64".into())
-                            .into(),
-                    )
+                    Err(ErrorCode::WrongValueType("bool".into(), "incompatible i64".into()).into())
                 }
             }
             Value::Float(v) => {
@@ -120,10 +117,7 @@ impl TryFrom<&Value> for bool {
                 } else if v == &0f64 {
                     Ok(false)
                 } else {
-                    Err(
-                        ErrorCode::UnexpectedValueType("bool".into(), "incompatible f64".into())
-                            .into(),
-                    )
+                    Err(ErrorCode::WrongValueType("bool".into(), "incompatible f64".into()).into())
                 }
             }
         }
@@ -156,7 +150,7 @@ impl<'conf> TryFrom<&'conf Value> for &'conf str {
                     Ok("false")
                 }
             }
-            other => Err(ErrorCode::UnexpectedValueType(
+            other => Err(ErrorCode::WrongValueType(
                 "string or bool".into(),
                 other.display_type().into(),
             )

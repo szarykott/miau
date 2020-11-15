@@ -72,7 +72,7 @@ impl TryFrom<String> for CompoundKey {
 impl fmt::Display for Key {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Key::Array(i) => write!(f, "`[{}]`", i),
+            Key::Array(i) => write!(f, "[{}]", i),
             Key::Map(k) => write!(f, "{}", k),
         }
     }

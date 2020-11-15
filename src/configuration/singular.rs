@@ -5,6 +5,7 @@ use crate::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
+// TODO: Is is possible to make Configuraion enum and plural and singular be its variants? Is it even needed to have both?
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct SingularConfiguration {

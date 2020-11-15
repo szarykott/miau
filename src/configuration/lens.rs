@@ -3,6 +3,7 @@ use crate::error::ConfigurationError;
 use serde::de::DeserializeOwned;
 use std::convert::{From, TryFrom, TryInto};
 
+//TODO: Can Lens support plural configuration in any way?
 /// Provides lensing capabilities to a configuration reader.
 /// Allows scoping into configuration section of choice for read only access.
 pub struct Lens<'config> {

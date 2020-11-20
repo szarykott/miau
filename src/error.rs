@@ -78,6 +78,7 @@ impl ConfigurationError {
 
         let path = self.inner.path.as_mut().unwrap();
 
+        // this rev() is a nasty hack to ensure ordering
         for key in keys.iter().rev() {
             path.push(key.clone());
         }

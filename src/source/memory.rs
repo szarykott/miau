@@ -11,6 +11,10 @@ impl InMemorySource {
             value: string.as_bytes().iter().cloned().collect(),
         }
     }
+
+    pub fn from_bytes(input: Vec<u8>) -> Self {
+        InMemorySource { value: input }
+    }
 }
 
 impl Source for InMemorySource {

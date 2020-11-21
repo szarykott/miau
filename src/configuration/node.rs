@@ -87,10 +87,12 @@ impl Node {
                     Some(node) => Ok(node),
                     None => Err(ErrorCode::IndexOutOfRange(*index).into()),
                 },
-                Key::Map(inner_key) => Err(ErrorCode::WrongKeyType(inner_key.to_owned()).into()),
+                Key::Map(inner_key) => {
+                    Err(ErrorCode::WrongKeyType(NodeType::Array, inner_key.to_owned()).into())
+                }
             },
             Node::Map(map) => match key {
-                Key::Array(i) => Err(ErrorCode::WrongKeyType(i.to_string()).into()),
+                Key::Array(i) => Err(ErrorCode::WrongKeyType(NodeType::Map, i.to_string()).into()),
                 Key::Map(k) => match map.get(k) {
                     Some(node) => Ok(node),
                     None => Err(ErrorCode::KeyNotFound(k.to_owned()).into()),

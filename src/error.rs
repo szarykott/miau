@@ -2,11 +2,13 @@ use crate::configuration::{CompoundKey, Key, NodeType};
 use serde::de;
 use std::{convert::From, fmt::Display, ops::Deref};
 
+/// Represents all error that might occur during all stages of processing configuration.
 #[derive(Debug)]
 pub struct ConfigurationError {
     inner: Box<ErrorImpl>,
 }
 
+/// Underlying implementation of ConfigurationError.
 #[derive(Debug)]
 pub struct ErrorImpl {
     code: ErrorCode,
@@ -14,7 +16,6 @@ pub struct ErrorImpl {
     path: Option<Vec<Key>>,
 }
 
-// TODO: Rethink errors in here!
 #[derive(Debug)]
 pub enum ErrorCode {
     /// Informs that operation is not valid for given node type e.g descending into value node.
@@ -23,8 +24,9 @@ pub enum ErrorCode {
     WrongValueType(String, String),
     /// Informs that requested index from array kept in configuration exceeds bounds of the array.
     IndexOutOfRange(usize),
-    // TODO: Test this error
-    WrongKeyType(String),
+    /// Informs that key specified while accessing configuration is of wrong type.
+    /// Might occur when trying to e.g index into map.
+    WrongKeyType(NodeType, String),
     /// Informs that requested key is not present in a configuration.
     KeyNotFound(String),
     /// Informs about errors during merging configuration nodes.
@@ -45,10 +47,16 @@ pub enum ErrorCode {
 }
 
 impl ConfigurationError {
+    /// Returns reference to underlying error code.
+    /// Returned object has all contextual information stripped off.
     pub fn inner(&self) -> &ErrorCode {
         &self.inner.code
     }
 
+    /// Enriches error context with arbitray message.
+    ///
+    /// Used to put more contextual information in the error to facilitate debugging issues.
+    /// One can put e.g. path to file that failed to open in error message this way.
     pub fn enrich_with_context<T: Into<String>>(mut self, message: T) -> Self {
         match self.inner.context {
             Some(ref mut context) => context.push(message.into()),
@@ -59,6 +67,10 @@ impl ConfigurationError {
         self
     }
 
+    /// Enriches error context with a key.
+    ///
+    /// Used to put more contextual information in the error to facilitate debugging issues.
+    /// One can put information about location in configuration tree in error with this function.
     pub fn enrich_with_key(mut self, key: Key) -> Self {
         match self.inner.path {
             Some(ref mut path) => {
@@ -71,6 +83,10 @@ impl ConfigurationError {
         self
     }
 
+    /// Enriches error context with a complex path.
+    ///
+    /// Used to put more contextual information in the error to facilitate debugging issues.
+    /// One can put information about location in configuration tree in error with this function.
     pub fn enrich_with_keys(mut self, keys: &CompoundKey) -> Self {
         if let None = self.inner.path {
             self.inner.path = Some(Vec::new());
@@ -84,6 +100,11 @@ impl ConfigurationError {
         }
 
         self
+    }
+
+    /// Returns an object that displays error in pretty way.
+    pub fn pretty_display(&self) -> PrettyConfigurationDisplay {
+        PrettyConfigurationDisplay(self)
     }
 }
 
@@ -126,24 +147,36 @@ impl<'v> Display for KeyVec<'v> {
     }
 }
 
-impl Deref for ConfigurationError {
-    type Target = ErrorImpl;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-// TODO: Make this display messages in one line and create additional wrapper PrettyDisplay so that error message is nice to all users
 impl Display for ConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}", &self.inner.code)?;
+        write!(f, "{}", &self.inner.code)?;
 
         if let Some(ref path) = self.inner.path {
-            writeln!(f, "Path : {}", KeyVec(path))?;
+            write!(f, ". Path : {}", KeyVec(path))?;
         }
 
         if let Some(ref context) = self.inner.context {
+            write!(f, ". Context: ")?;
+            for msg in context.iter() {
+                write!(f, "| {} |", msg)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub struct PrettyConfigurationDisplay<'e>(&'e ConfigurationError);
+
+impl<'e> Display for PrettyConfigurationDisplay<'e> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", &self.0.inner.code)?;
+
+        if let Some(ref path) = self.0.inner.path {
+            writeln!(f, "Path : {}", KeyVec(path))?;
+        }
+
+        if let Some(ref context) = self.0.inner.context {
             writeln!(f, "Context: ")?;
             for msg in context.iter() {
                 writeln!(f, "\t{}", msg)?;
@@ -164,7 +197,9 @@ impl Display for ErrorCode {
                 write!(f, "Unexpected value type. Expected {}, got {}", exp, act)
             }
             ErrorCode::IndexOutOfRange(i) => write!(f, "Index {} exceeds bounds of the array.", i),
-            ErrorCode::WrongKeyType(k) => write!(f, "Got key of wrong type. Got key {}.", k),
+            ErrorCode::WrongKeyType(ntype, k) => {
+                write!(f, "Cannot access {} with key `{}`", ntype, k)
+            }
             ErrorCode::KeyNotFound(k) => write!(f, "Unable to find key {}.", k),
             ErrorCode::BadNodeMerge(a, b) => {
                 write!(f, "It is forbidden to substitute {} for {}", b, a)
@@ -175,6 +210,14 @@ impl Display for ErrorCode {
             ErrorCode::EmptyConfiguration => write!(f, "Expected non-empty configuration"),
             ErrorCode::ParsingError(msg) => write!(f, "Parsing error. {}", msg),
         }
+    }
+}
+
+impl Deref for ConfigurationError {
+    type Target = ErrorImpl;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 

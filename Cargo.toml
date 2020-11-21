@@ -1,19 +1,26 @@
 [package]
-name = "configuration-rs"
-version = "0.1.0"
 authors = ["Radosław Kot <rdkt13@gmail.com>"]
 edition = "2018"
+name = "configuration-rs"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-async-trait = { version = "0.1" }
-futures = { version = "0.3" }
-serde = { version = "1.0", features = ["derive"] }
+[features]
+json = ["serde_json"]
+serde_toml = ["toml"]
+yaml = ["serde_yaml"]
 
-# use feature flags for those
-serde_json = { version = "1.0" }
-serde_yaml = { version = "0.8" }
+[dependencies]
+async-trait = {version = "0.1"}
+futures = {version = "0.3"}
+serde = {version = "1.0", features = ["derive"]}
+# optional dependencies
+serde_json = {version = "1.0", optional = true}
+serde_yaml = {version = "0.8", optional = true}
+toml = {version = "0.5", optional = true}
 
 [dev-dependencies]
-rstest = { version = "0.6.4" }
+rstest = {version = "0.6.4"}
+serde_json = {version = "1.0"}
+serde_yaml = {version = "0.8"}

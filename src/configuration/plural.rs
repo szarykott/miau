@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{node, node::Node, CompoundKey, SingularConfiguration, Value},
+    configuration::{common, node, node::ConfigurationNode, CompoundKey, Value},
     error::{ConfigurationError, ErrorCode},
 };
 use serde::{de::DeserializeOwned, Deserialize};
@@ -10,9 +10,9 @@ use std::{
 };
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(from = "Node")]
+#[serde(from = "ConfigurationNode")]
 pub struct Configuration {
-    pub(crate) roots: Vec<Node>,
+    pub(crate) roots: Vec<ConfigurationNode>,
 }
 
 impl Configuration {
@@ -41,30 +41,15 @@ impl Configuration {
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
-        for candidate in self.roots.iter().rev() {
-            if let result @ Ok(_) = candidate.get_result::<T>(&keys) {
-                return result;
-            }
-        }
-
-        Ok(None)
+        common::get_result_internal(&self.roots, keys)
     }
 
     pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
-        self.merge_owned()?.try_into()
+        self.merge_owned().and_then(|node| node.try_convert_into())
     }
 
-    pub fn merge_owned(mut self) -> Result<SingularConfiguration, ConfigurationError> {
-        let mut roots = self.roots.drain(..);
-        match roots.next() {
-            Some(node) => roots
-                .try_fold(node, |acc, next| node::merge(acc, next))
-                .map(|final_node| SingularConfiguration { root: final_node }),
-            None => {
-                let error: ConfigurationError = ErrorCode::EmptyConfiguration.into();
-                Err(error.enrich_with_context("Failed to merge configurations"))
-            }
-        }
+    pub fn merge_owned(mut self) -> Result<ConfigurationNode, ConfigurationError> {
+        common::merge_owned(self.roots.drain(..))
     }
 }
 
@@ -74,8 +59,8 @@ impl Default for Configuration {
     }
 }
 
-impl From<Node> for Configuration {
-    fn from(node: Node) -> Self {
+impl From<ConfigurationNode> for Configuration {
+    fn from(node: ConfigurationNode) -> Self {
         Configuration { roots: vec![node] }
     }
 }
@@ -85,11 +70,11 @@ impl From<HashMap<String, String>> for Configuration {
         let mut result = HashMap::new();
 
         for (k, v) in map {
-            result.insert(k, Node::Value(Some(Value::String(v))));
+            result.insert(k, ConfigurationNode::Value(Some(Value::String(v))));
         }
 
         Configuration {
-            roots: vec![Node::Map(result)],
+            roots: vec![ConfigurationNode::Map(result)],
         }
     }
 }

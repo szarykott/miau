@@ -53,7 +53,7 @@ fn test_singular_configuration_into_struct() {
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
-    let config = configuration.try_into::<Config>().unwrap();
+    let config = configuration.try_convert_into::<Config>().unwrap();
 
     assert!(vec![1, 2].iter().eq(config.array.iter()));
     assert_eq!("a", config.value3);

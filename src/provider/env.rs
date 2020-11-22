@@ -1,6 +1,6 @@
 use super::Provider;
 use crate::{
-    configuration::{merge, Configuration, Key, Node, Value},
+    configuration::{merge, Configuration, ConfigurationNode, Key, Value},
     parsing,
 };
 use std::{collections::HashMap, convert::Into, env};
@@ -35,8 +35,8 @@ impl EnvironmentProvider {
     }
 }
 
-fn push(keys: impl Iterator<Item = (String, String)>) -> Option<Node> {
-    let mut trees: Vec<Node> = Vec::new();
+fn push(keys: impl Iterator<Item = (String, String)>) -> Option<ConfigurationNode> {
+    let mut trees: Vec<ConfigurationNode> = Vec::new();
     for (key, value) in keys {
         if let Ok(ckey) = parsing::str_to_key(key.as_ref()) {
             let all_map = ckey
@@ -64,14 +64,14 @@ fn push(keys: impl Iterator<Item = (String, String)>) -> Option<Node> {
     }
 }
 
-fn create_tree(mut keys: impl Iterator<Item = String>, value: String) -> Node {
+fn create_tree(mut keys: impl Iterator<Item = String>, value: String) -> ConfigurationNode {
     match keys.next() {
         Some(key) => {
             let mut map = HashMap::new();
             map.insert(key, create_tree(keys, value));
-            Node::Map(map)
+            ConfigurationNode::Map(map)
         }
-        None => Node::Value(Some(Value::String(value))),
+        None => ConfigurationNode::Value(Some(Value::String(value))),
     }
 }
 

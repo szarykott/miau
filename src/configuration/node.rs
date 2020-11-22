@@ -11,10 +11,10 @@ use std::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
-pub(crate) enum Node {
+pub enum ConfigurationNode {
     Value(Option<Value>),
-    Map(HashMap<String, Node>),
-    Array(Vec<Node>),
+    Map(HashMap<String, ConfigurationNode>),
+    Array(Vec<ConfigurationNode>),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -24,15 +24,29 @@ pub enum NodeType {
     Array,
 }
 
-impl Node {
-    pub fn get_option<'node, T>(&'node self, keys: &CompoundKey) -> Option<T>
+impl ConfigurationNode {
+    pub fn get<'node, T, K>(&'node self, keys: K) -> Option<T>
     where
         T: TryFrom<&'node Value, Error = ConfigurationError>,
+        K: TryInto<CompoundKey>,
     {
-        self.get_result(keys).ok().unwrap_or_default()
+        let keys = keys.try_into().ok()?;
+        self.get_result_internal(&keys).ok().unwrap_or_default()
     }
 
-    pub fn get_result<'a, T>(&'a self, keys: &CompoundKey) -> Result<Option<T>, ConfigurationError>
+    pub fn get_result<'a, T, K>(&'a self, keys: K) -> Result<Option<T>, ConfigurationError>
+    where
+        T: TryFrom<&'a Value, Error = ConfigurationError>,
+        K: TryInto<CompoundKey, Error = ConfigurationError>,
+    {
+        let keys = keys.try_into()?;
+        self.get_result_internal(&keys)
+    }
+
+    pub(crate) fn get_result_internal<'a, T>(
+        &'a self,
+        keys: &CompoundKey,
+    ) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
@@ -45,26 +59,31 @@ impl Node {
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
         match self {
-            Node::Value(Some(v)) => match TryFrom::try_from(v) {
+            ConfigurationNode::Value(Some(v)) => match TryFrom::try_from(v) {
                 Ok(t) => Ok(Some(t)),
                 Err(e) => Err(e),
             },
-            Node::Value(None) => Ok(None),
-            Node::Array(_) => {
+            ConfigurationNode::Value(None) => Ok(None),
+            ConfigurationNode::Array(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
-            Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
+            ConfigurationNode::Map(_) => {
+                Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into())
+            }
         }
     }
 
-    pub fn descend_many(&self, keys: &CompoundKey) -> Result<&Node, ConfigurationError> {
+    pub fn descend_many(
+        &self,
+        keys: &CompoundKey,
+    ) -> Result<&ConfigurationNode, ConfigurationError> {
         Result::Ok(self).and_then(|n| n.descend_iter(keys.iter()))
     }
 
     fn descend_iter<'a>(
         &self,
         mut kiter: impl Iterator<Item = &'a Key>,
-    ) -> Result<&Node, ConfigurationError> {
+    ) -> Result<&ConfigurationNode, ConfigurationError> {
         match kiter.next() {
             Some(key) => self
                 .descend(key)
@@ -74,15 +93,15 @@ impl Node {
         }
     }
 
-    pub fn descend(&self, key: &Key) -> Result<&Node, ConfigurationError> {
+    pub fn descend(&self, key: &Key) -> Result<&ConfigurationNode, ConfigurationError> {
         match self {
-            Node::Value(_) => match key {
+            ConfigurationNode::Value(_) => match key {
                 Key::Array(_) => {
                     Err(ErrorCode::WrongNodeType(NodeType::Array, NodeType::Value).into())
                 }
                 Key::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Map, NodeType::Value).into()),
             },
-            Node::Array(array) => match key {
+            ConfigurationNode::Array(array) => match key {
                 Key::Array(index) => match array.get(*index) {
                     Some(node) => Ok(node),
                     None => Err(ErrorCode::IndexOutOfRange(*index).into()),
@@ -91,7 +110,7 @@ impl Node {
                     Err(ErrorCode::WrongKeyType(NodeType::Array, inner_key.to_owned()).into())
                 }
             },
-            Node::Map(map) => match key {
+            ConfigurationNode::Map(map) => match key {
                 Key::Array(i) => Err(ErrorCode::WrongKeyType(NodeType::Map, i.to_string()).into()),
                 Key::Map(k) => match map.get(k) {
                     Some(node) => Ok(node),
@@ -101,7 +120,7 @@ impl Node {
         }
     }
 
-    pub fn try_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
+    pub fn try_convert_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
         T::deserialize(self).map_err(|e| {
             e.enrich_with_context(format!(
                 "Failed to deserialize configuration to type {}",
@@ -112,46 +131,53 @@ impl Node {
 
     pub fn node_type(&self) -> NodeType {
         match self {
-            Node::Value(_) => NodeType::Value,
-            Node::Map(_) => NodeType::Map,
-            Node::Array(_) => NodeType::Array,
+            ConfigurationNode::Value(_) => NodeType::Value,
+            ConfigurationNode::Map(_) => NodeType::Map,
+            ConfigurationNode::Array(_) => NodeType::Array,
         }
     }
 }
 
-pub(crate) fn merge(previous: Node, next: Node) -> Result<Node, ConfigurationError> {
+pub fn merge(
+    previous: ConfigurationNode,
+    next: ConfigurationNode,
+) -> Result<ConfigurationNode, ConfigurationError> {
     match (previous, next) {
-        (_, vn @ Node::Value(_)) => Ok(vn.clone()),
-        (Node::Map(mp), Node::Map(mn)) => Ok(Node::Map(merge_maps(mp, mn)?)),
-        (Node::Array(vp), Node::Array(vn)) => Ok(Node::Array(merge_arrays(vp, vn))),
+        (_, vn @ ConfigurationNode::Value(_)) => Ok(vn.clone()),
+        (ConfigurationNode::Map(mp), ConfigurationNode::Map(mn)) => {
+            Ok(ConfigurationNode::Map(merge_maps(mp, mn)?))
+        }
+        (ConfigurationNode::Array(vp), ConfigurationNode::Array(vn)) => {
+            Ok(ConfigurationNode::Array(merge_arrays(vp, vn)))
+        }
         (vp, vm) => Err(ErrorCode::BadNodeMerge(vp.node_type(), vm.node_type()).into()),
     }
 }
 
 fn merge_maps<'p>(
-    mut previous: HashMap<String, Node>,
-    mut next: HashMap<String, Node>,
-) -> Result<HashMap<String, Node>, ConfigurationError> {
+    mut previous: HashMap<String, ConfigurationNode>,
+    mut next: HashMap<String, ConfigurationNode>,
+) -> Result<HashMap<String, ConfigurationNode>, ConfigurationError> {
     for (key, next_node) in next.drain() {
         if !previous.contains_key(&key) {
             previous.insert(key.clone(), next_node.clone());
         } else {
             let previous_node = previous.remove(&key).unwrap();
             match (previous_node, next_node) {
-                (Node::Value(_), vn @ Node::Value(_)) => {
+                (ConfigurationNode::Value(_), vn @ ConfigurationNode::Value(_)) => {
                     previous.insert(key.clone(), vn.clone());
                 }
-                (Node::Map(mp), Node::Map(mn)) => {
+                (ConfigurationNode::Map(mp), ConfigurationNode::Map(mn)) => {
                     previous.insert(
                         key.clone(),
-                        Node::Map(
+                        ConfigurationNode::Map(
                             merge_maps(mp, mn)
                                 .map_err(|e| e.enrich_with_key(Key::Map(key.clone())))?,
                         ),
                     );
                 }
-                (Node::Array(vp), Node::Array(vn)) => {
-                    previous.insert(key.clone(), Node::Array(merge_arrays(vp, vn)));
+                (ConfigurationNode::Array(vp), ConfigurationNode::Array(vn)) => {
+                    previous.insert(key.clone(), ConfigurationNode::Array(merge_arrays(vp, vn)));
                 }
                 (vp, vn) => {
                     let error: ConfigurationError =
@@ -168,7 +194,10 @@ fn merge_maps<'p>(
     Ok(previous)
 }
 
-fn merge_arrays<'p>(mut vp: Vec<Node>, vn: Vec<Node>) -> Vec<Node> {
+fn merge_arrays<'p>(
+    mut vp: Vec<ConfigurationNode>,
+    vn: Vec<ConfigurationNode>,
+) -> Vec<ConfigurationNode> {
     if vp.len() >= vn.len() {
         for (index, root) in vn.iter().enumerate() {
             vp[index] = root.clone();
@@ -195,15 +224,15 @@ impl Display for NodeType {
 
 macro_rules! try_from_for {
     ($($t:ty),*) => {
-        $(impl TryFrom<&Node> for $t {
+        $(impl TryFrom<&ConfigurationNode> for $t {
             type Error = ConfigurationError;
 
-            fn try_from(value: &Node) -> Result<Self, Self::Error> {
+            fn try_from(value: &ConfigurationNode) -> Result<Self, Self::Error> {
                 match value {
-                    Node::Value(Some(tv)) => tv.try_into(),
-                    Node::Value(None) => Err(ErrorCode::NullValue.into()),
-                    Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
-                    Node::Array(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into()),
+                    ConfigurationNode::Value(Some(tv)) => tv.try_into(),
+                    ConfigurationNode::Value(None) => Err(ErrorCode::NullValue.into()),
+                    ConfigurationNode::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
+                    ConfigurationNode::Array(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into()),
                 }
             }
         })*
@@ -212,15 +241,17 @@ macro_rules! try_from_for {
 
 try_from_for!(i8, i16, i32, i64, isize, f32, f64, bool, String);
 
-impl<'conf> TryFrom<&'conf Node> for &'conf str {
+impl<'conf> TryFrom<&'conf ConfigurationNode> for &'conf str {
     type Error = ConfigurationError;
 
-    fn try_from(value: &'conf Node) -> Result<Self, Self::Error> {
+    fn try_from(value: &'conf ConfigurationNode) -> Result<Self, Self::Error> {
         match value {
-            Node::Value(Some(tv)) => tv.try_into(),
-            Node::Value(None) => Ok(""),
-            Node::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
-            Node::Array(_) => {
+            ConfigurationNode::Value(Some(tv)) => tv.try_into(),
+            ConfigurationNode::Value(None) => Ok(""),
+            ConfigurationNode::Map(_) => {
+                Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into())
+            }
+            ConfigurationNode::Array(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
         }

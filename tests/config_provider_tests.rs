@@ -5,7 +5,7 @@ use serde_json::json;
 fn test_configuration_as_configuration_source() {
     let mut builder1 = ConfigurationBuilder::default();
     builder1.add(
-        InMemorySource::from_str(json!({ "value" : 1 }).to_string().as_str()),
+        InMemorySource::from_string_slice(json!({ "value" : 1 }).to_string().as_str()),
         Json::default(),
     );
 

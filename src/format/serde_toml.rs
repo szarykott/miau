@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Configuration,
+    configuration::ConfigurationNode,
     error::{ConfigurationError, ErrorCode},
     format::Format,
 };
@@ -20,8 +20,12 @@ impl Default for Toml {
 }
 
 impl Format for Toml {
-    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
-        toml::from_slice::<Configuration>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
+        toml::from_slice::<ConfigurationNode>(&input)
             .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
+    }
+
+    fn describe(&self) -> String {
+        "toml".into()
     }
 }

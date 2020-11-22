@@ -32,7 +32,7 @@ fn test_environment_source_compound_key() {
 
     let mut builder = ConfigurationBuilder::default();
     builder.add(
-        InMemorySource::from_str(
+        InMemorySource::from_string_slice(
             json!({
                 "t2_key" : {
                     "first_key" : "first_value",

@@ -11,6 +11,7 @@ pub use memory::InMemorySource;
 pub trait Source {
     /// Synchronous function to collect source into key value pairs.
     fn collect(&self) -> Result<Vec<u8>, ConfigurationError>;
+    fn describe(&self) -> String;
 }
 
 #[async_trait]
@@ -18,4 +19,5 @@ pub trait Source {
 pub trait AsyncSource {
     /// Asynchronous function to collect source into key value pairs.
     async fn collect(&self) -> Result<Vec<u8>, ConfigurationError>;
+    fn describe(&self) -> String;
 }

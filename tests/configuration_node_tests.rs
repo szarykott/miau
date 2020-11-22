@@ -21,7 +21,10 @@ static TEST_JSON: &'static str = r#"
 #[test]
 fn test_basic_singular_configuration() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
@@ -47,7 +50,7 @@ struct Config {
 fn test_singular_configuration_into_struct() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
-        InMemorySource::from_str(TEST_JSON_2.trim()),
+        InMemorySource::from_string_slice(TEST_JSON_2.trim()),
         Json::default(),
     );
 
@@ -63,7 +66,10 @@ fn test_singular_configuration_into_struct() {
 #[test]
 fn test_singular_configuration_wrong_type_conversion() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
@@ -82,7 +88,10 @@ fn test_singular_configuration_wrong_type_conversion() {
 #[test]
 fn test_singluar_configuration_index_out_of_range() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
@@ -101,7 +110,10 @@ fn test_singluar_configuration_index_out_of_range() {
 #[test]
 fn test_singluar_configuration_key_not_found() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
@@ -117,7 +129,10 @@ fn test_singluar_configuration_key_not_found() {
 #[test]
 fn test_singluar_configuration_descending_into_non_descendable() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 
@@ -136,7 +151,10 @@ fn test_singluar_configuration_descending_into_non_descendable() {
 #[test]
 fn test_singular_configuration_key_and_node_mismatch_descending() {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(TEST_JSON.trim()), Json::default());
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
 
     let configuration = builder.build().unwrap().merge_owned().unwrap();
 

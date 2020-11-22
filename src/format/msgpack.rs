@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Configuration,
+    configuration::ConfigurationNode,
     error::{ConfigurationError, ErrorCode},
     format::Format,
 };
@@ -22,8 +22,12 @@ impl Default for Msgpack {
 }
 
 impl Format for Msgpack {
-    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
-        rmp_serde::from_slice::<Configuration>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
+        rmp_serde::from_slice::<ConfigurationNode>(&input)
             .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
+    }
+
+    fn describe(&self) -> String {
+        "message pack".into()
     }
 }

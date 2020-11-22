@@ -6,9 +6,9 @@ pub struct InMemorySource {
 }
 
 impl InMemorySource {
-    pub fn from_str(string: &str) -> Self {
+    pub fn from_string_slice(string: &str) -> Self {
         InMemorySource {
-            value: string.as_bytes().iter().cloned().collect(),
+            value: string.as_bytes().to_vec(),
         }
     }
 
@@ -20,5 +20,9 @@ impl InMemorySource {
 impl Source for InMemorySource {
     fn collect(&self) -> Result<Vec<u8>, ConfigurationError> {
         Ok(self.value.clone())
+    }
+
+    fn describe(&self) -> String {
+        "in memory".into()
     }
 }

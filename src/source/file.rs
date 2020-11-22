@@ -36,4 +36,11 @@ impl Source for FileSource {
 
         Ok(buffer)
     }
+
+    fn describe(&self) -> String {
+        std::fs::canonicalize(&self.path)
+            .unwrap_or_else(|_| self.path.clone())
+            .display()
+            .to_string()
+    }
 }

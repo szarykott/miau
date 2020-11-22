@@ -252,7 +252,7 @@ impl<'de> MapAccess<'de> for MapAccessor<'de> {
         V: DeserializeSeed<'de>,
     {
         let key = self.0.next();
-        if let None = key {
+        if key.is_none() {
             return Err(Error::custom(
                 "missing key corresponding to value being deserialized in a map",
             ));
@@ -319,7 +319,7 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
                     return Err(Error::invalid_length(m.len(), &"expected map of length 1"));
                 }
 
-                let key = m.keys().nth(0).unwrap().as_str();
+                let key = m.keys().next().unwrap().as_str();
                 let deserializer: StrDeserializer<ConfigurationError> = key.into_deserializer();
                 let value = seed.deserialize(deserializer)?;
 

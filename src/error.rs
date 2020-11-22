@@ -88,7 +88,7 @@ impl ConfigurationError {
     /// Used to put more contextual information in the error to facilitate debugging issues.
     /// One can put information about location in configuration tree in error with this function.
     pub fn enrich_with_keys(mut self, keys: &CompoundKey) -> Self {
-        if let None = self.inner.path {
+        if self.inner.path.is_none() {
             self.inner.path = Some(Vec::new());
         }
 

@@ -34,13 +34,19 @@ use std::collections::HashMap;
 fn test_arrays_are_merged_when_substituted(json1: &str, json2: &str, exp: Vec<i32>) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(json1.as_ref()), Json::new());
-    builder.add(InMemorySource::from_str(json2.as_ref()), Json::new());
+    builder.add(
+        InMemorySource::from_string_slice(json1.as_ref()),
+        Json::new(),
+    );
+    builder.add(
+        InMemorySource::from_string_slice(json2.as_ref()),
+        Json::new(),
+    );
 
     let confiuration = builder.build().unwrap();
 
     let mut result = confiuration
-        .try_into::<HashMap<String, Vec<i32>>>()
+        .try_convert_into::<HashMap<String, Vec<i32>>>()
         .unwrap();
 
     assert_eq!(exp, result.remove("array1".into()).unwrap());
@@ -58,12 +64,12 @@ fn test_maps_are_merged_simple() {
     let cfg2 = r#"{ "value2" : -1.1 }"#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg1), Json::new());
-    builder.add(InMemorySource::from_str(cfg2), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg1), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg2), Json::new());
 
     let confiuration = builder.build().unwrap();
 
-    let result = confiuration.try_into::<Config>().unwrap();
+    let result = confiuration.try_convert_into::<Config>().unwrap();
 
     assert_eq!(result.value1, 1);
     assert_eq!(result.value2, -1.1);
@@ -98,12 +104,12 @@ fn test_maps_are_merged_nested() {
     .trim();
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg1), Json::new());
-    builder.add(InMemorySource::from_str(cfg2), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg1), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg2), Json::new());
 
     let confiuration = builder.build().unwrap();
 
-    let result = confiuration.try_into::<Config>().unwrap();
+    let result = confiuration.try_convert_into::<Config>().unwrap();
 
     assert_eq!(result.value1.value1, 13);
     assert_eq!(result.value2, -1.1);
@@ -160,8 +166,8 @@ fn test_maps_are_merged_nested() {
 )]
 fn test_node_merge_error_messages(cfg1: &str, cfg2: &str, exp_key: &str, exp_for: &str) {
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg1), Json::new());
-    builder.add(InMemorySource::from_str(cfg2), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg1), Json::new());
+    builder.add(InMemorySource::from_string_slice(cfg2), Json::new());
 
     let confiuration = builder.build().unwrap();
 

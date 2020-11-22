@@ -1,4 +1,7 @@
-use super::{common, CompoundKey, ConfigurationNode, Value};
+use super::{
+    common, CompoundKey, Configuration, ConfigurationDefinition, ConfigurationDefinitionLens,
+    ConfigurationNode, Value,
+};
 use crate::error::ConfigurationError;
 use serde::de::DeserializeOwned;
 use std::convert::{From, TryFrom, TryInto};
@@ -6,14 +9,19 @@ use std::convert::{From, TryFrom, TryInto};
 /// Provides lensing capabilities to a configuration reader.
 /// Allows scoping into configuration section of choice for read only access.
 pub struct Lens<'config> {
-    handle: Vec<Option<&'config ConfigurationNode>>,
+    roots: Vec<ConfigurationDefinitionLens<'config>>,
 }
 
-//TODO: Make some functions common with Configuration
 impl<'config> Lens<'config> {
-    pub(crate) fn new(node: &'config ConfigurationNode) -> Self {
+    pub fn new_singular(def: &'config ConfigurationDefinition) -> Self {
         Lens {
-            handle: vec![Some(node)],
+            roots: vec![def.into()],
+        }
+    }
+
+    pub fn new(config: &'config Configuration) -> Self {
+        Lens {
+            roots: config.roots.iter().map(|r| r.into()).collect(),
         }
     }
 
@@ -22,18 +30,14 @@ impl<'config> Lens<'config> {
         S: TryInto<CompoundKey, Error = ConfigurationError>,
     {
         let keys = keys.try_into()?;
-        let new_handle = self
-            .handle
+
+        let new_roots = self
+            .roots
             .iter()
-            .map(|root| match root {
-                Some(node) => match node.descend_many(&keys) {
-                    Ok(nhdl) => Some(nhdl),
-                    Err(_) => None,
-                },
-                None => None,
-            })
+            .map(|def| def.mutate(|node| node.descend_many(&keys).ok()))
             .collect();
-        Ok(Lens { handle: new_handle })
+
+        Ok(Lens { roots: new_roots })
     }
 
     pub fn get<T, S>(&'config self, keys: S) -> Option<T>
@@ -60,7 +64,7 @@ impl<'config> Lens<'config> {
     where
         T: TryFrom<&'config Value, Error = ConfigurationError>,
     {
-        common::get_result_option_internal(&self.handle, keys)
+        common::get_result_internal(self.roots.iter().filter_map(|def| def.node), keys)
     }
 
     pub fn try_convert_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
@@ -68,12 +72,18 @@ impl<'config> Lens<'config> {
     }
 
     pub fn merge_cloned(mut self) -> Result<ConfigurationNode, ConfigurationError> {
-        common::merge_cloned(self.handle.drain(..).filter_map(|e| e))
+        common::merge_cloned(self.roots.drain(..).filter_map(|def| def.node))
     }
 }
 
-impl<'config> From<&'config ConfigurationNode> for Lens<'config> {
-    fn from(config: &'config ConfigurationNode) -> Self {
-        Lens::new(&config)
+impl<'config> From<&'config ConfigurationDefinition> for Lens<'config> {
+    fn from(config: &'config ConfigurationDefinition) -> Self {
+        Lens::new_singular(config)
+    }
+}
+
+impl<'config> From<&'config Configuration> for Lens<'config> {
+    fn from(config: &'config Configuration) -> Self {
+        Lens::new(config)
     }
 }

@@ -1,6 +1,9 @@
 use crate::{
-    configuration::{common, node, node::ConfigurationNode, CompoundKey, Value},
-    error::{ConfigurationError, ErrorCode},
+    configuration::{
+        common, node::ConfigurationNode, CompoundKey, ConfigurationDefinition, ConfigurationInfo,
+        Lens, Value,
+    },
+    error::ConfigurationError,
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use std::{
@@ -12,10 +15,20 @@ use std::{
 #[derive(Debug, Clone, Deserialize)]
 #[serde(from = "ConfigurationNode")]
 pub struct Configuration {
-    pub(crate) roots: Vec<ConfigurationNode>,
+    pub(crate) roots: Vec<ConfigurationDefinition>,
 }
 
 impl Configuration {
+    pub fn new_singular(info: ConfigurationInfo, root: ConfigurationNode) -> Self {
+        Configuration {
+            roots: vec![ConfigurationDefinition::new(info, root)],
+        }
+    }
+
+    pub fn new_empty() -> Self {
+        Configuration { roots: vec![] }
+    }
+
     pub fn get<'a, T, S>(&'a self, keys: S) -> Option<T>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
@@ -41,15 +54,19 @@ impl Configuration {
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
-        common::get_result_internal(&self.roots, keys)
+        common::get_result_internal(self.roots.iter().map(|def| &def.root), &keys)
     }
 
-    pub fn try_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
+    pub fn lens(&'_ self) -> Lens<'_> {
+        self.into()
+    }
+
+    pub fn try_convert_into<T: DeserializeOwned>(self) -> Result<T, ConfigurationError> {
         self.merge_owned().and_then(|node| node.try_convert_into())
     }
 
     pub fn merge_owned(mut self) -> Result<ConfigurationNode, ConfigurationError> {
-        common::merge_owned(self.roots.drain(..))
+        common::merge_owned(self.roots.drain(..).map(|def| def.root))
     }
 }
 
@@ -61,7 +78,7 @@ impl Default for Configuration {
 
 impl From<ConfigurationNode> for Configuration {
     fn from(node: ConfigurationNode) -> Self {
-        Configuration { roots: vec![node] }
+        Configuration::new_singular(ConfigurationInfo::new("other Node", "unknown"), node)
     }
 }
 
@@ -73,8 +90,7 @@ impl From<HashMap<String, String>> for Configuration {
             result.insert(k, ConfigurationNode::Value(Some(Value::String(v))));
         }
 
-        Configuration {
-            roots: vec![ConfigurationNode::Map(result)],
-        }
+        let node = ConfigurationNode::Map(result);
+        Configuration::new_singular(ConfigurationInfo::new("HashMap", "HashMap"), node)
     }
 }

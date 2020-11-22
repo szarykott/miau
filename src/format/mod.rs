@@ -1,4 +1,4 @@
-use crate::{configuration::Configuration, error::ConfigurationError};
+use crate::{configuration::ConfigurationNode, error::ConfigurationError};
 
 #[cfg(feature = "ini")]
 mod ini;
@@ -35,15 +35,20 @@ pub use xml::Xml;
 pub use yaml::Yaml;
 
 pub trait Format {
-    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError>;
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError>;
+    fn describe(&self) -> String;
 }
 
 impl<T> Format for T
 where
-    T: Fn(Vec<u8>) -> Result<Configuration, ConfigurationError>,
+    T: Fn(Vec<u8>) -> Result<ConfigurationNode, ConfigurationError>,
 {
-    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
         self(input)
+    }
+
+    fn describe(&self) -> String {
+        "custom".into()
     }
 }
 

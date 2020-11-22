@@ -15,9 +15,9 @@ fn test_arrays_are_subsituted_when_config_is_built() {
     let mut builder = ConfigurationBuilder::default();
 
     builder
-        .add(InMemorySource::from_str(json1), Json::new())
-        .add(InMemorySource::from_str(json2), Json::new())
-        .add(InMemorySource::from_str(json3), Json::new());
+        .add(InMemorySource::from_string_slice(json1), Json::new())
+        .add(InMemorySource::from_string_slice(json2), Json::new())
+        .add(InMemorySource::from_string_slice(json3), Json::new());
 
     let confiuration = builder.build().unwrap();
 
@@ -35,8 +35,8 @@ fn test_array_to_map_substitution() {
     let mut builder = ConfigurationBuilder::default();
 
     builder
-        .add(InMemorySource::from_str(json1), Json::new())
-        .add(InMemorySource::from_str(json2), Json::new());
+        .add(InMemorySource::from_string_slice(json1), Json::new())
+        .add(InMemorySource::from_string_slice(json2), Json::new());
 
     let configuration = builder.build().unwrap();
 
@@ -52,8 +52,8 @@ fn test_map_to_array_substitution() {
     let mut builder = ConfigurationBuilder::default();
 
     builder
-        .add(InMemorySource::from_str(json1), Json::new())
-        .add(InMemorySource::from_str(json2), Json::new());
+        .add(InMemorySource::from_string_slice(json1), Json::new())
+        .add(InMemorySource::from_string_slice(json2), Json::new());
 
     let configuration = builder.build().unwrap();
 
@@ -66,7 +66,7 @@ fn test_get_result_non_existing_key() {
     let json1 = r#"{"key" : { "key" : 7 }}"#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(json1), Json::new());
+    builder.add(InMemorySource::from_string_slice(json1), Json::new());
 
     let configuration = builder.build().unwrap();
 
@@ -80,7 +80,7 @@ fn test_get_result_wrong_key_type() {
     let json1 = r#"{"key" : { "key" : "not_a_number" }}"#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(json1), Json::new());
+    builder.add(InMemorySource::from_string_slice(json1), Json::new());
 
     let configuration = builder.build().unwrap();
 
@@ -94,7 +94,7 @@ fn test_get_result_key_unparsable() {
     let json1 = r#"{"key" : { "key" : "not_a_number" }}"#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(json1), Json::new());
+    builder.add(InMemorySource::from_string_slice(json1), Json::new());
 
     let configuration = builder.build().unwrap();
 
@@ -119,8 +119,8 @@ fn test_get_result_key_unparsable() {
 fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), Json::new());
-    builder.add(InMemorySource::from_str(c2), Json::new());
+    builder.add(InMemorySource::from_string_slice(c1), Json::new());
+    builder.add(InMemorySource::from_string_slice(c2), Json::new());
 
     let result = builder.build();
 
@@ -143,8 +143,8 @@ fn test_type_to_integer_substitution(c1: &str, c2: &str, exp: isize) {
 fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), Json::new());
-    builder.add(InMemorySource::from_str(c2), Json::new());
+    builder.add(InMemorySource::from_string_slice(c1), Json::new());
+    builder.add(InMemorySource::from_string_slice(c2), Json::new());
 
     let result = builder.build().unwrap();
 
@@ -163,8 +163,8 @@ fn test_type_to_float_substitution(c1: &str, c2: &str, exp: f64) {
 fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), Json::new());
-    builder.add(InMemorySource::from_str(c2), Json::new());
+    builder.add(InMemorySource::from_string_slice(c1), Json::new());
+    builder.add(InMemorySource::from_string_slice(c2), Json::new());
 
     let result = builder.build().unwrap();
 
@@ -183,8 +183,8 @@ fn test_type_to_bool_substitution(c1: &str, c2: &str, exp: bool) {
 fn test_type_to_string_substitution(c1: &str, c2: &str, exp: &str) {
     let mut builder = ConfigurationBuilder::default();
 
-    builder.add(InMemorySource::from_str(c1), Json::new());
-    builder.add(InMemorySource::from_str(c2), Json::new());
+    builder.add(InMemorySource::from_string_slice(c1), Json::new());
+    builder.add(InMemorySource::from_string_slice(c2), Json::new());
 
     let result = builder.build().unwrap();
 

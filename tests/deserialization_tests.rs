@@ -43,7 +43,7 @@ fn test_deserialization_all_simple_types() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(63, config.integer64);
     assert_eq!(31, config.integer32);
@@ -73,7 +73,7 @@ fn test_error_when_deserializing_internal_struct_fails() {
     .to_string();
 
     let root = serde_json::from_str::<Configuration>(&cfg_str).unwrap();
-    let error = root.try_into::<Config>().unwrap_err();
+    let error = root.try_convert_into::<Config>().unwrap_err();
 
     assert!(std::matches!(
         error.get_code(),
@@ -89,7 +89,7 @@ fn test_error_when_deserializing_external_source_fails() {
     let cfg_str = r#" this is not json asdas1211/// "#;
 
     let mut builder = ConfigurationBuilder::default();
-    builder.add(InMemorySource::from_str(cfg_str), Json::default());
+    builder.add(InMemorySource::from_string_slice(cfg_str), Json::default());
 
     let error = builder.build().unwrap_err();
 
@@ -120,7 +120,7 @@ fn test_deserialization_struct_with_map() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(42, config.inner.value);
 }
@@ -139,7 +139,7 @@ fn test_deserialization_struct_with_array() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert!(vec![1, 2, 3].iter().eq(config.inner.iter()));
 }
@@ -167,7 +167,7 @@ fn test_deserialization_struct_with_array_of_structs() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert!(vec![
         ConfigInner { value: 1 },
@@ -200,7 +200,7 @@ fn test_deserialization_struct_with_array_of_structs_transparent() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert!(vec![
         ConfigInner { value: 1 },
@@ -228,7 +228,7 @@ fn test_deserialization_struct_with_hashmap() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(Some(&1), config.inner.get("a"));
     assert_eq!(Some(&2), config.inner.get("b"));
@@ -266,7 +266,7 @@ fn test_deserialization_enum_unit_variant() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnum::Unit, config.enumeration);
 }
@@ -285,7 +285,7 @@ fn test_deserialization_enum_unit_variant_untagged() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnumUntagged::Unit, config.enumeration);
 }
@@ -306,7 +306,7 @@ fn test_deserialization_enum_newtype_variant() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnum::Newtype(42i32), config.enumeration);
 }
@@ -325,7 +325,7 @@ fn test_deserialization_enum_newtype_variant_untagged() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnumUntagged::Newtype(42f32), config.enumeration);
 }
@@ -346,7 +346,7 @@ fn test_deserialization_enum_tuple_variant() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnum::Tuple(1, 2), config.enumeration);
 }
@@ -365,7 +365,7 @@ fn test_deserialization_enum_tuple_variant_untagged() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnumUntagged::Tuple(1f32, 2), config.enumeration);
 }
@@ -388,7 +388,7 @@ fn test_deserialization_enum_struct_variant() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnum::Structo { value: 3 }, config.enumeration);
 }
@@ -409,7 +409,7 @@ fn test_deserialization_enum_struct_variant_untagged() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(DaEnumUntagged::Structo { value: 3 }, config.enumeration);
 }
@@ -431,7 +431,7 @@ fn test_deserialization_option() {
 
     let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
 
-    let config = root.try_into::<Config>().unwrap();
+    let config = root.try_convert_into::<Config>().unwrap();
 
     assert_eq!(Some(3f64), config.some);
     assert_eq!(None, config.none);

@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Configuration,
+    configuration::ConfigurationNode,
     error::{ConfigurationError, ErrorCode},
     format::Format,
 };
@@ -20,12 +20,16 @@ impl Default for Json5 {
 }
 
 impl Format for Json5 {
-    fn transform(&self, input: Vec<u8>) -> Result<Configuration, ConfigurationError> {
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
         let str_input = String::from_utf8(input).map_err(|e| -> ConfigurationError {
             ErrorCode::DeserializationError(e.to_string()).into()
         })?;
 
-        json5::from_str::<Configuration>(str_input.as_str())
+        json5::from_str::<ConfigurationNode>(str_input.as_str())
             .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
+    }
+
+    fn describe(&self) -> String {
+        "json5".into()
     }
 }

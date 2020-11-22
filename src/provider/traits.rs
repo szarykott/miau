@@ -1,5 +1,5 @@
 use crate::{
-    configuration::Configuration,
+    configuration::{Configuration, ConfigurationInfo},
     error::ConfigurationError,
     format::Format,
     source::{AsyncSource, Source},
@@ -10,25 +10,27 @@ use async_trait::async_trait;
 /// Examples might be other configurations already in memory, environment variables or others.
 pub trait Provider {
     fn collect(&self) -> Result<Configuration, ConfigurationError>;
+    fn describe(&self) -> ConfigurationInfo;
 }
 
 /// Async provider where distinction between source and format does not make sense or makes little sense.
 #[async_trait]
 pub trait AsyncProvider: Send + Sync {
     async fn collect(&self) -> Result<Configuration, ConfigurationError>;
+    fn describe(&self) -> ConfigurationInfo;
 }
 
 /// Combines source and transformer into single provider.
 pub struct ProviderStruct<S, T> {
     source: S,
-    transformer: T,
+    format: T,
 }
 
 impl<S: Source, T: Format> ProviderStruct<S, T> {
     pub fn synchronous(s: S, t: T) -> Self {
         ProviderStruct {
             source: s,
-            transformer: t,
+            format: t,
         }
     }
 }
@@ -41,14 +43,23 @@ where
     pub fn asynchronous(s: S, t: T) -> Self {
         ProviderStruct {
             source: s,
-            transformer: t,
+            format: t,
         }
     }
 }
 
-impl<S: Source, T: Format> Provider for ProviderStruct<S, T> {
+impl<S, T> Provider for ProviderStruct<S, T>
+where
+    S: Source,
+    T: Format,
+{
     fn collect(&self) -> Result<Configuration, ConfigurationError> {
-        self.transformer.transform(self.source.collect()?)
+        let node = self.format.transform(self.source.collect()?)?;
+        Ok(Configuration::new_singular(self.describe(), node))
+    }
+
+    fn describe(&self) -> ConfigurationInfo {
+        ConfigurationInfo::new(self.source.describe(), self.format.describe())
     }
 }
 
@@ -59,6 +70,11 @@ where
     T: Format + Send + Sync,
 {
     async fn collect(&self) -> Result<Configuration, ConfigurationError> {
-        self.transformer.transform(self.source.collect().await?)
+        let node = self.format.transform(self.source.collect().await?)?;
+        Ok(Configuration::new_singular(self.describe(), node))
+    }
+
+    fn describe(&self) -> ConfigurationInfo {
+        ConfigurationInfo::new(self.source.describe(), self.format.describe())
     }
 }

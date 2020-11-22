@@ -120,7 +120,7 @@ impl ConfigurationNode {
         }
     }
 
-    pub fn try_convert_into<'de, T: DeserializeOwned>(&self) -> Result<T, ConfigurationError> {
+    pub fn try_convert_into<T: DeserializeOwned>(&'_ self) -> Result<T, ConfigurationError> {
         T::deserialize(self).map_err(|e| {
             e.enrich_with_context(format!(
                 "Failed to deserialize configuration to type {}",
@@ -143,7 +143,7 @@ pub fn merge(
     next: ConfigurationNode,
 ) -> Result<ConfigurationNode, ConfigurationError> {
     match (previous, next) {
-        (_, vn @ ConfigurationNode::Value(_)) => Ok(vn.clone()),
+        (_, vn @ ConfigurationNode::Value(_)) => Ok(vn),
         (ConfigurationNode::Map(mp), ConfigurationNode::Map(mn)) => {
             Ok(ConfigurationNode::Map(merge_maps(mp, mn)?))
         }
@@ -154,7 +154,7 @@ pub fn merge(
     }
 }
 
-fn merge_maps<'p>(
+fn merge_maps(
     mut previous: HashMap<String, ConfigurationNode>,
     mut next: HashMap<String, ConfigurationNode>,
 ) -> Result<HashMap<String, ConfigurationNode>, ConfigurationError> {
@@ -185,7 +185,7 @@ fn merge_maps<'p>(
 
                     return Err(error
                         .enrich_with_context("Failed to merge maps")
-                        .enrich_with_key(Key::Map(key.clone())));
+                        .enrich_with_key(Key::Map(key)));
                 }
             }
         }
@@ -194,7 +194,7 @@ fn merge_maps<'p>(
     Ok(previous)
 }
 
-fn merge_arrays<'p>(
+fn merge_arrays(
     mut vp: Vec<ConfigurationNode>,
     vn: Vec<ConfigurationNode>,
 ) -> Vec<ConfigurationNode> {

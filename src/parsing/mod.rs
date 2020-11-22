@@ -11,14 +11,14 @@ pub(crate) fn str_to_key(input: &str) -> Result<CompoundKey, ConfigurationError>
     }
 
     // accept string is a format key1:[index1]:key2:key3:[index2]
-    for potential_key in input.split_terminator(":") {
+    for potential_key in input.split_terminator(':') {
         let trimmed_key = potential_key.trim();
 
-        if trimmed_key.starts_with("[") && trimmed_key.ends_with("]") {
+        if trimmed_key.starts_with('[') && trimmed_key.ends_with(']') {
             let trimmed_key = trimmed_key[1..trimmed_key.len() - 1].trim();
             match trimmed_key.parse::<usize>() {
                 Ok(i) => result.push(Key::Array(i)),
-                Err(e) => return Err(ErrorCode::ParsingError(format!("Error occured while parsing `{}` : {}", trimmed_key, e.to_string()).into()).into()),
+                Err(e) => return Err(ErrorCode::ParsingError(format!("Error occured while parsing `{}` : {}", trimmed_key, e.to_string())).into()),
             }
         } else {
             result.push(Key::Map(trimmed_key.to_owned()))

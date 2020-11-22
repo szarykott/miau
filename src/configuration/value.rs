@@ -112,9 +112,9 @@ impl TryFrom<&Value> for bool {
                 }
             }
             Value::Float(v) => {
-                if v == &1f64 {
+                if (v - 1f64).abs() < <f64>::EPSILON {
                     Ok(true)
-                } else if v == &0f64 {
+                } else if (v - 0f64).abs() < <f64>::EPSILON {
                     Ok(false)
                 } else {
                     Err(ErrorCode::WrongValueType("bool".into(), "incompatible f64".into()).into())

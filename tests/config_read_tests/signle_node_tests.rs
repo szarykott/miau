@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use configuration_rs::configuration::ConfigurationNode;
 
 #[test]

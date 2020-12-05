@@ -1,5 +1,3 @@
-mod utils;
-
 use configuration_rs::{
     builder::ConfigurationBuilder, configuration::Configuration, error::ErrorCode, format::Json,
     key, source::InMemorySource,

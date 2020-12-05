@@ -8,6 +8,7 @@ use std::convert::{From, TryFrom, TryInto};
 
 /// Provides lensing capabilities to a configuration reader.
 /// Allows scoping into configuration section of choice for read only access.
+#[derive(Debug)]
 pub struct Lens<'config> {
     roots: Vec<ConfigurationDefinitionLens<'config>>,
 }

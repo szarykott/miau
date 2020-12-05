@@ -31,6 +31,6 @@ impl Default for ConfigurationInfo {
 
 impl fmt::Display for ConfigurationInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Source : {}, Format : {}", self.source, self.format)
+        write!(f, "source : {}, format : {}", self.source, self.format)
     }
 }

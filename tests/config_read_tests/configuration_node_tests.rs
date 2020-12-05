@@ -18,8 +18,10 @@ static TEST_JSON: &'static str = r#"
     }
 }"#;
 
+// ---------------- Happy path tests ---------------------------- //
+
 #[test]
-fn test_basic_singular_configuration() {
+fn test_single_node_read_option() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),
@@ -31,7 +33,38 @@ fn test_basic_singular_configuration() {
     assert_eq!(Some(true), configuration.get("map:entry:value1"));
     assert_eq!(Some("true"), configuration.get("map:entry:value1"));
     assert_eq!(Some(1), configuration.get("map:entry:value2:array:[0]"));
+    assert_eq!(None, configuration.get::<i32, &str>("droid"));
 }
+
+#[test]
+fn test_single_node_read_result() {
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(
+        InMemorySource::from_string_slice(TEST_JSON.trim()),
+        Json::default(),
+    );
+
+    let configuration = builder.build().unwrap().merge_owned().unwrap();
+
+    assert_eq!(
+        Some(true),
+        configuration.get_result("map:entry:value1").unwrap()
+    );
+    assert_eq!(
+        Some("true"),
+        configuration.get_result("map:entry:value1").unwrap()
+    );
+    assert_eq!(
+        Some(1),
+        configuration
+            .get_result("map:entry:value2:array:[0]")
+            .unwrap()
+    );
+    let error = configuration.get_result::<i32, &str>("droid").unwrap_err();
+    assert!(std::matches!(error.get_code(), ErrorCode::KeyNotFound(..)));
+}
+
+// ---------- Strongly typed conversion tests ---------------- //
 
 static TEST_JSON_2: &'static str = r#"
 {
@@ -63,8 +96,10 @@ fn test_singular_configuration_into_struct() {
     assert_eq!(None, config.optional);
 }
 
+// ------------------- Failure tests ----------------------------- //
+
 #[test]
-fn test_singular_configuration_wrong_type_conversion() {
+fn test_node_wrong_type_conversion() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),
@@ -75,7 +110,7 @@ fn test_singular_configuration_wrong_type_conversion() {
 
     let error = configuration
         .get_result::<i32, &str>("map:entry:value3")
-        .unwrap_err(); // value1 is string
+        .unwrap_err(); // value3 is string
 
     assert!(std::matches!(
         error.get_code(),
@@ -86,7 +121,7 @@ fn test_singular_configuration_wrong_type_conversion() {
 }
 
 #[test]
-fn test_singluar_configuration_index_out_of_range() {
+fn test_node_index_out_of_range() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),
@@ -108,7 +143,7 @@ fn test_singluar_configuration_index_out_of_range() {
 }
 
 #[test]
-fn test_singluar_configuration_key_not_found() {
+fn test_node_key_not_found() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),
@@ -127,7 +162,7 @@ fn test_singluar_configuration_key_not_found() {
 }
 
 #[test]
-fn test_singluar_configuration_descending_into_non_descendable() {
+fn test_node_descending_into_non_descendable() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),
@@ -149,7 +184,7 @@ fn test_singluar_configuration_descending_into_non_descendable() {
 }
 
 #[test]
-fn test_singular_configuration_key_and_node_mismatch_descending() {
+fn test_node_key_and_node_mismatch_descending() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
         InMemorySource::from_string_slice(TEST_JSON.trim()),

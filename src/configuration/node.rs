@@ -73,7 +73,24 @@ impl ConfigurationNode {
         }
     }
 
-    pub fn descend_many(
+    pub fn try_convert_into<T: DeserializeOwned>(&'_ self) -> Result<T, ConfigurationError> {
+        T::deserialize(self).map_err(|e| {
+            e.enrich_with_context(format!(
+                "Failed to deserialize configuration to type {}",
+                std::any::type_name::<T>()
+            ))
+        })
+    }
+
+    pub(crate) fn node_type(&self) -> NodeType {
+        match self {
+            ConfigurationNode::Value(_) => NodeType::Value,
+            ConfigurationNode::Map(_) => NodeType::Map,
+            ConfigurationNode::Array(_) => NodeType::Array,
+        }
+    }
+
+    pub(crate) fn descend_many(
         &self,
         keys: &CompoundKey,
     ) -> Result<&ConfigurationNode, ConfigurationError> {
@@ -93,7 +110,7 @@ impl ConfigurationNode {
         }
     }
 
-    pub fn descend(&self, key: &Key) -> Result<&ConfigurationNode, ConfigurationError> {
+    pub(crate) fn descend(&self, key: &Key) -> Result<&ConfigurationNode, ConfigurationError> {
         match self {
             ConfigurationNode::Value(_) => match key {
                 Key::Array(_) => {
@@ -119,26 +136,9 @@ impl ConfigurationNode {
             },
         }
     }
-
-    pub fn try_convert_into<T: DeserializeOwned>(&'_ self) -> Result<T, ConfigurationError> {
-        T::deserialize(self).map_err(|e| {
-            e.enrich_with_context(format!(
-                "Failed to deserialize configuration to type {}",
-                std::any::type_name::<T>()
-            ))
-        })
-    }
-
-    pub fn node_type(&self) -> NodeType {
-        match self {
-            ConfigurationNode::Value(_) => NodeType::Value,
-            ConfigurationNode::Map(_) => NodeType::Map,
-            ConfigurationNode::Array(_) => NodeType::Array,
-        }
-    }
 }
 
-pub fn merge(
+pub(crate) fn merge(
     previous: ConfigurationNode,
     next: ConfigurationNode,
 ) -> Result<ConfigurationNode, ConfigurationError> {

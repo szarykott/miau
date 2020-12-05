@@ -1,4 +1,6 @@
-use configuration_rs::{builder::ConfigurationBuilder, format::Json, source::InMemorySource};
+use configuration_rs::{
+    builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource,
+};
 use serde::Deserialize;
 
 static TEST_JSON: &'static str = r#"
@@ -13,6 +15,8 @@ static TEST_JSON: &'static str = r#"
         }
     }
 }"#;
+
+// -------------- Happy path tests ------------------------- //
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -60,6 +64,46 @@ fn test_double_lens() {
 }
 
 #[test]
+fn test_lensing_with_multiple_configs() {
+    let json1 = r#"
+    {
+        "map" : {
+            "value" : 1,
+            "array" : [1, 2, 3]
+        },
+        "array" : [1]
+    }
+    "#
+    .trim();
+
+    let json2 = r#"
+    {
+        "map" : {
+            "value" : 2,
+            "array" : [3]
+        },
+        "array" : [22, 23, 24, 25]
+    }
+    "#
+    .trim();
+
+    let mut builder = ConfigurationBuilder::default();
+    builder.add(InMemorySource::from_string_slice(json1), Json::default());
+    builder.add(InMemorySource::from_string_slice(json2), Json::default());
+
+    let configuration = builder.build().unwrap();
+    let lens = configuration.lens().try_lens("map").unwrap();
+
+    assert_eq!(Some(3), lens.get("array:[0]"));
+    assert_eq!(Some(2), lens.get("array:[1]"));
+    assert_eq!(Some(3), lens.get("array:[2]"));
+    assert_eq!(Some("2".to_string()), lens.get("value")); // TODO: mention this to string in docs
+    assert_eq!(None, lens.get::<i32, &str>("array:[3]"));
+}
+
+// ----------------- Strongly typed tests ------------------------- //
+
+#[test]
 fn test_lens_into_struct() {
     let mut builder = ConfigurationBuilder::default();
     builder.add(
@@ -76,4 +120,17 @@ fn test_lens_into_struct() {
     assert_eq!("a", config.value3);
     assert_eq!(None, config.optional);
     assert!(true)
+}
+
+// --------------- Failure tests ---------------------- //
+
+#[test]
+fn test_lens_key_unparsable() {
+    let mut builder = ConfigurationBuilder::default();
+
+    let configuration = builder.build().unwrap();
+    let error = configuration.lens().try_lens("drooids:[a]").unwrap_err();
+
+    assert!(std::matches!(error.get_code(), ErrorCode::ParsingError(..)));
+    assert!(error.to_string().contains("drooids:[a]"));
 }

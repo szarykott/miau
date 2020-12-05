@@ -35,3 +35,4 @@ rmp-serde = {version = "0.14"}
 rstest = {version = "0.6.4"}
 serde_json = {version = "1.0"}
 serde_yaml = {version = "0.8"}
+tokio = { version = "0.3.5", features = ["rt", "rt-multi-thread", "macros", "fs", "io-util"] }

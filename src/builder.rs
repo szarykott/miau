@@ -89,7 +89,6 @@ enum SourceType<'provider> {
     Asynchronous(Box<dyn AsyncProvider + 'provider>),
 }
 
-// TODO: test async builder
 impl<'provider> AsyncConfigurationBuilder<'provider> {
     pub fn new() -> Self {
         AsyncConfigurationBuilder {

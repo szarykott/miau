@@ -13,6 +13,14 @@ impl ConfigurationInfo {
             format: format.into(),
         }
     }
+
+    pub fn format(&self) -> &str {
+        self.format.as_str()
+    }
+
+    pub fn source(&self) -> &str {
+        self.source.as_str()
+    }
 }
 
 impl Default for ConfigurationInfo {

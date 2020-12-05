@@ -68,6 +68,10 @@ impl Configuration {
     pub fn merge_owned(mut self) -> Result<ConfigurationNode, ConfigurationError> {
         common::merge_owned(self.roots.drain(..).map(|def| def.root))
     }
+
+    pub fn infos(&self) -> impl Iterator<Item = &ConfigurationInfo> {
+        self.roots.iter().map(|def| &def.info)
+    }
 }
 
 impl Default for Configuration {

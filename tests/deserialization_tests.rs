@@ -1,5 +1,8 @@
-use configuration_rs::{
-    builder::ConfigurationBuilder, configuration::Configuration, error::ErrorCode, format::Json,
+use miau::{
+    builder::ConfigurationBuilder,
+    configuration::{Configuration, ConfigurationNode},
+    error::ErrorCode,
+    format::Json,
     source::InMemorySource,
 };
 use serde::Deserialize;
@@ -22,6 +25,7 @@ fn test_deserialization_all_simple_types() {
         float32: f32,
         float64: f64,
         unit: (),
+        character: char,
     }
 
     let config_str = serde_json::json!({
@@ -37,7 +41,8 @@ fn test_deserialization_all_simple_types() {
         "string_owned" : "owned",
         "float32" : 1.1,
         "float64" : 1.2,
-        "unit" : null
+        "unit" : null,
+        "character" : "a"
     })
     .to_string();
 
@@ -58,6 +63,7 @@ fn test_deserialization_all_simple_types() {
     assert_eq!(1.1, config.float32);
     assert_eq!(1.2, config.float64);
     assert_eq!((), config.unit);
+    assert_eq!('a', config.character);
 }
 
 #[test]
@@ -82,6 +88,26 @@ fn test_error_when_deserializing_internal_struct_fails() {
     let error_stringified = error.to_string();
     assert!(error_stringified.contains("some_integer_field"));
     assert!(error_stringified.contains(&format!("{}", std::any::type_name::<Config>())));
+}
+
+#[test]
+fn test_error_when_deserializing_char_longer_than_one() {
+    #[derive(Deserialize, Debug)]
+    struct Config {
+        character: char,
+    };
+
+    let json = r#"{ "character" : "longer" }"#;
+
+    let root = serde_json::from_str::<ConfigurationNode>(&json).unwrap();
+
+    let error = root.try_convert_into::<Config>().unwrap_err();
+
+    assert!(std::matches!(
+        error.get_code(),
+        ErrorCode::DeserializationError(..)
+    ));
+    assert!(error.to_string().contains("expected string of length 1"));
 }
 
 #[test]

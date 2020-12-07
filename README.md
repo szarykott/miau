@@ -1,53 +1,55 @@
-# Scriba
+# Miau
 
-Scriba is a layered configuration system for Rust Programming Lanaguage.
-It has been built with async in mind.
+**Miau** is a *layered configuration system* for Rust Programming Lanaguage.
+It has been built with **extensibility** and **async** in mind from ground up. 
 
-Its principle is extensibility. Therefore it exposes traits that can be used to plug into it with your configuration sources and formats.
+It is built around `serde`, famous serialization an deserialization library for Rust. `serde` is the only non-optional heavy dependency of Miau.
 
-Scriba is built around `serde`, famous serialization an deserialization library for Rust. It is the only non-optional heavy dependency of Scriba. 
+It has been inspired by both Rust's `config-rs` and .NET's `IConfiguration`.
 
-## Overview
+---
 
-There are few concepts in this library :
-* source
-* format
-* builder
-* configuration
-* configuration node
+## Features
+
+
+* out of the box support for configuration sources that do not require extra dependencies (in memory, environment, files, ...)
+* out of the box support for most popular data formats (json, yaml, json5, ...)
+* unit tested infrastructure for layering configurations
+* unit tested infrastructure for creating strongly typed configurations from layered ones
+* possibility to create your own sources or formats by implementing simple traits
+* support for both sync and async runtimes (Miau is *truly* executor agnostic)
+* all optional dependencies are feature flagged so that you do not pay for features you do not use
+
+## Non-features
+
+* heavy dependencies (this is the reason no remote source is supported out of the box, usually they require heavy dependencies and can be done in at least few ways, for instance issuing http request)
+
+---
+
+## Definitions
+
+In Miau, configurations are retrieved from **sources** and stored in **builder** along with information about **format**. When **builder** is built, it transforms its content into collection of **configuration nodes** that together form **configuration**. It can be used as is or deserialized into strongly typed struct of choice.
 
 ### Source
 
-Source is, as name suggests, source of your configuration. It can be an in-memory source, a file or remote source, be it your homemade tool or industry one, like consul for instance.
+Source is, as name suggests, source of your configuration. It can be an in-memory source, a file or remote source, be it your homemade tool or industry standard one like consul.
 
-Scriba provides utilities for all sources that can be coded with standard library functions. It means that sources like environment, file or in-memory collections are supported out of the box. However, support to remote sources will never be implemented in Scriba. Reason for it is quite simple. Let's imagine a source that returns configuration via HTTP. There's plenty of HTTP libraries, they come and go. Scriba chooses to be agnostic from those external libraries. Support for such sources might be implemented in separate libraries.
+Data can be retrieved from sources in both synchronous and asynchronous way using executor of choice. 
 
-You can also implement support for it yourself, it is enough to implement `Source` (or `AsyncSource`) trait to be able to plug it in Scriba as if it was always there.
+Sources that are supported out of the box are the ones that can be implemented using standard library features.
 
 ### Format
 
-Format is way in which configuraton is preserved in file or in other source. Scriba provides support for most popular formats that are also supported by `serde` like json, json5, yaml and others.
+Format is way in which configuraton is preserved in file or in other source. Miau provides support for most popular formats that are also supported by `serde` like json, json5, yaml and others. 
 
-Scriba exposes `Format` trait. It is enough to implement it for your format to be able to plug it in.
-
-Keeping notions of source and format separate and exporting them as traits allows for code reuse and extensibility.
-
-### Builder
-
-To transform sources into layered configuration Scriba uses builder that keep track of them along with associated formats. Builder comes in two flavours - sync and async. Creating configurations is as easy as adding new sources and calling `build` in the end. 
-
-### Configuration
-
-Configuration is an ordered collection of configuration nodes (see below). Order of nodes corresponds to order of adding them to builder. Each node corresponds to one source.
-
-When key from configuration is requested nodes are searched for a match in revers order, starting from most recent ones.
-
+Most popular formats are supported out of the box. If format you are looking for is not supported, worry not, as long as it is supported by `serde` it can be easily integrated with Miau.
 
 ### Configuration node
 
-Configuration node is a tree like structure that corresponds to exactly one configuration source. It keeps all the information for a source in a strongly typed way.
+Configuration node is a tree like structure that corresponds to exactly one configuration source. It keeps all the information for the source in a strongly typed manner.
 
+### Configuration
 
+Configuration is an ordered collection of configuration nodes. Order of nodes corresponds to order of adding them to builder. Each node corresponds to one source.
 
-
-
+When key from configuration is requested nodes are searched for a match in revers order, starting from most recent ones.

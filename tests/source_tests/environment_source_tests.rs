@@ -1,4 +1,4 @@
-use configuration_rs::{
+use miau::{
     builder::ConfigurationBuilder, format::Json, provider::EnvironmentProvider,
     source::InMemorySource,
 };

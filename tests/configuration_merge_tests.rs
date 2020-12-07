@@ -1,6 +1,4 @@
-use configuration_rs::{
-    builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource,
-};
+use miau::{builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource};
 use rstest::rstest;
 use serde::Deserialize;
 use std::collections::HashMap;

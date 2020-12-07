@@ -1,4 +1,4 @@
-use configuration_rs::{
+use miau::{
     configuration::Value,
     error::{ConfigurationError, ErrorCode},
 };

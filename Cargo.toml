@@ -1,7 +1,7 @@
 [package]
 authors = ["Radosław Kot <rdkt13@gmail.com>"]
 edition = "2018"
-name = "configuration-rs"
+name = "miau"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,6 +15,8 @@ msgpack = ["rmp-serde"]
 serde_json5 = ["json5"]
 serde_toml = ["toml"]
 yaml = ["serde_yaml"]
+
+# TODO: Use patch version as well in here
 
 [dependencies]
 async-trait = {version = "0.1"}
@@ -35,4 +37,4 @@ rmp-serde = {version = "0.14"}
 rstest = {version = "0.6.4"}
 serde_json = {version = "1.0"}
 serde_yaml = {version = "0.8"}
-tokio = { version = "0.3.5", features = ["rt", "rt-multi-thread", "macros", "fs", "io-util"] }
+tokio = {version = "0.3.5", features = ["rt", "rt-multi-thread", "macros", "fs", "io-util"]}

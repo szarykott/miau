@@ -1,6 +1,4 @@
-use configuration_rs::{
-    builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource,
-};
+use miau::{builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource};
 use serde::Deserialize;
 
 static TEST_JSON: &'static str = r#"

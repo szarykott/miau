@@ -1,4 +1,4 @@
-use configuration_rs::{builder::ConfigurationBuilder, format, source::InMemorySource};
+use miau::{builder::ConfigurationBuilder, format, source::InMemorySource};
 use serde::Serialize;
 
 #[derive(Serialize, Debug)]

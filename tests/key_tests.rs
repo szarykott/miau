@@ -1,4 +1,4 @@
-use configuration_rs::configuration::Key;
+use miau::configuration::Key;
 
 #[test]
 fn test_key_succesfull_unwrap() {

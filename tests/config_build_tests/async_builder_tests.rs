@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use configuration_rs::{
+use miau::{
     builder::{AsyncConfigurationBuilder, ConfigurationBuilder},
     error::ConfigurationError,
     format,

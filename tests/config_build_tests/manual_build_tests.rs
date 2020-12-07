@@ -1,4 +1,4 @@
-use configuration_rs::configuration::{ConfigurationNode, Value};
+use miau::configuration::{ConfigurationNode, Value};
 use std::collections::HashMap;
 
 #[test]

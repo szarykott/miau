@@ -1,6 +1,4 @@
-use configuration_rs::{
-    builder::ConfigurationBuilder, error::ErrorCode, format, source::FileSource,
-};
+use miau::{builder::ConfigurationBuilder, error::ErrorCode, format, source::FileSource};
 use std::path::PathBuf;
 
 #[test]

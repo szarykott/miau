@@ -1,0 +1,12 @@
+{
+    "map": {
+        "value": 1,
+        "boolean": true,
+        "word": "word"
+    },
+    "array": [
+        1,
+        2,
+        3
+    ]
+}

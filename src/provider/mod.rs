@@ -1,5 +1,6 @@
 mod config;
 mod env;
+mod hashmap;
 mod node;
 mod traits;
 

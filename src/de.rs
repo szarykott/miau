@@ -142,7 +142,7 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationTree {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_str(TryInto::try_into(self)?)
+        visitor.visit_string(TryInto::try_into(self)?)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>

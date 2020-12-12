@@ -3,16 +3,28 @@ use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
+/// Value stored in leafs of [`ConfigurationTree`](super::ConfigurationTree).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Value {
+    /// A string
     String(String),
+    /// A boolean
     Bool(bool),
+    /// A signed integer
     SignedInteger(i64),
+    /// A floating point value
     Float(f64),
 }
 
 impl Value {
+    /// Displays "type" of current value.
+    ///
+    ///```rust
+    ///# use miau::configuration::Value;
+    ///let value = Value::String("droid".to_string());
+    ///assert_eq!("string", value.display_type());
+    ///```
     pub fn display_type(&self) -> &str {
         match self {
             Value::String(_) => "string",

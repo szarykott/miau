@@ -1,5 +1,5 @@
 use miau::{
-    builder::ConfigurationBuilder, configuration::ConfigurationNode, format::Json,
+    builder::ConfigurationBuilder, configuration::ConfigurationTree, format::Json,
     source::InMemorySource,
 };
 use serde_json::{from_str, json};
@@ -26,7 +26,7 @@ fn test_configuration_as_configuration_source() {
 
 #[test]
 fn test_configuration_node_as_configuration_source() {
-    let node = from_str::<ConfigurationNode>(json!({ "value" : 1 }).to_string().as_ref()).unwrap();
+    let node = from_str::<ConfigurationTree>(json!({ "value" : 1 }).to_string().as_ref()).unwrap();
 
     let mut builder = ConfigurationBuilder::default();
     builder.add_provider(node);

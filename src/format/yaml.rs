@@ -1,13 +1,15 @@
 use crate::{
-    configuration::ConfigurationNode,
+    configuration::ConfigurationTree,
     error::{ConfigurationError, ErrorCode},
     format::Format,
 };
 use std::default::Default;
 
+/// Represents `yaml` data format.
 pub struct Yaml {}
 
 impl Yaml {
+    /// Creates new `Yaml` instance.
     pub fn new() -> Self {
         Yaml {}
     }
@@ -20,8 +22,8 @@ impl Default for Yaml {
 }
 
 impl Format for Yaml {
-    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
-        serde_yaml::from_slice::<ConfigurationNode>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationTree, ConfigurationError> {
+        serde_yaml::from_slice::<ConfigurationTree>(&input)
             .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
     }
 

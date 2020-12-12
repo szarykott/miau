@@ -1,15 +1,17 @@
 use crate::{
-    configuration::ConfigurationNode,
+    configuration::ConfigurationTree,
     error::{ConfigurationError, ErrorCode},
     format::Format,
 };
 use std::default::Default;
 
-/// MessagePack format.
+/// Represents `message pack` data format.
+///
 /// It is vital that configurations serialized with this format are named i.e contain field names.
 pub struct Msgpack {}
 
 impl Msgpack {
+    /// Creates new `Msgpack` instance.
     pub fn new() -> Self {
         Msgpack {}
     }
@@ -22,8 +24,8 @@ impl Default for Msgpack {
 }
 
 impl Format for Msgpack {
-    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationNode, ConfigurationError> {
-        rmp_serde::from_slice::<ConfigurationNode>(&input)
+    fn transform(&self, input: Vec<u8>) -> Result<ConfigurationTree, ConfigurationError> {
+        rmp_serde::from_slice::<ConfigurationTree>(&input)
             .map_err(|e| ErrorCode::DeserializationError(e.to_string()).into())
     }
 

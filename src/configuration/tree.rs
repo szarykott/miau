@@ -9,22 +9,39 @@ use std::{
     fmt::Display,
 };
 
+/// Stores information from single configuration source.
+///
+/// It is a tree whoose nodes can be maps or arrays of other trees and leaves are values.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
-pub enum ConfigurationNode {
+pub enum ConfigurationTree {
+    /// Configuration value
     Value(Option<Value>),
-    Map(HashMap<String, ConfigurationNode>),
-    Array(Vec<ConfigurationNode>),
+    /// Map of other configuration tress.
+    Map(HashMap<String, ConfigurationTree>),
+    /// Array of other configuration trees.
+    Array(Vec<ConfigurationTree>),
 }
 
+/// Describes node type of current [`ConfigurationTree`].
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeType {
+    /// Node type of [`ConfigurationTree::Value`]
     Value,
+    /// Node type of [`ConfigurationTree::Map`]
     Map,
+    /// Node type of [`ConfigurationTree::Array`]
     Array,
 }
 
-impl ConfigurationNode {
+impl ConfigurationTree {
+    /// Retrieves value stored in `ConfigurationTree` under given `keys`.
+    ///
+    /// If no value is found or key transformation fails `None` is returned.
+    /// [`get_result`](Self::get_result) provides more insight into root cause of error.
+    ///
+    /// # Example
+    /// TODO: add example
     pub fn get<'node, T, K>(&'node self, keys: K) -> Option<T>
     where
         T: TryFrom<&'node Value, Error = ConfigurationError>,
@@ -34,6 +51,12 @@ impl ConfigurationNode {
         self.get_result_internal(&keys).ok().unwrap_or_default()
     }
 
+    /// Retrieves value stored in `ConfigurationTree` under given `keys`.
+    ///
+    /// If key transformation fails error is returned. Value is returned if found, `None` otherwise.
+    ///
+    /// # Example
+    /// TODO: add example
     pub fn get_result<'a, T, K>(&'a self, keys: K) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
@@ -54,25 +77,34 @@ impl ConfigurationNode {
             .and_then(|node| node.get_value::<T>().map_err(|e| e.enrich_with_keys(keys)))
     }
 
+    /// Retrieves strongly typed primitive value from this ConfigurationTree.
+    ///
+    /// This operation can only be succesfull if this is a leaf of the tree.
+    /// To retrive complex structures, for instance vectors or user defined structs, use [`try_convert_into`](Self::try_convert_into).
     pub fn get_value<'a, T>(&'a self) -> Result<Option<T>, ConfigurationError>
     where
         T: TryFrom<&'a Value, Error = ConfigurationError>,
     {
         match self {
-            ConfigurationNode::Value(Some(v)) => match TryFrom::try_from(v) {
+            ConfigurationTree::Value(Some(v)) => match TryFrom::try_from(v) {
                 Ok(t) => Ok(Some(t)),
                 Err(e) => Err(e),
             },
-            ConfigurationNode::Value(None) => Ok(None),
-            ConfigurationNode::Array(_) => {
+            ConfigurationTree::Value(None) => Ok(None),
+            ConfigurationTree::Array(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
-            ConfigurationNode::Map(_) => {
+            ConfigurationTree::Map(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into())
             }
         }
     }
 
+    /// Deserializes `ConfigurationTree` into strongly typed struct.
+    ///
+    /// It is only required that struct to be deserialized to implements [`Deserialize`](serde::Deserialize)
+    /// and contains no borrowed fields, for instance `&str`.
+    /// Due to memory model of `miau` it is impossible to deserialize into such fields.
     pub fn try_convert_into<T: DeserializeOwned>(&'_ self) -> Result<T, ConfigurationError> {
         T::deserialize(self).map_err(|e| {
             e.enrich_with_context(format!(
@@ -84,23 +116,23 @@ impl ConfigurationNode {
 
     pub(crate) fn node_type(&self) -> NodeType {
         match self {
-            ConfigurationNode::Value(_) => NodeType::Value,
-            ConfigurationNode::Map(_) => NodeType::Map,
-            ConfigurationNode::Array(_) => NodeType::Array,
+            ConfigurationTree::Value(_) => NodeType::Value,
+            ConfigurationTree::Map(_) => NodeType::Map,
+            ConfigurationTree::Array(_) => NodeType::Array,
         }
     }
 
     pub(crate) fn descend_many(
         &self,
         keys: &CompoundKey,
-    ) -> Result<&ConfigurationNode, ConfigurationError> {
+    ) -> Result<&ConfigurationTree, ConfigurationError> {
         Result::Ok(self).and_then(|n| n.descend_iter(keys.iter()))
     }
 
     fn descend_iter<'a>(
         &self,
         mut kiter: impl Iterator<Item = &'a Key>,
-    ) -> Result<&ConfigurationNode, ConfigurationError> {
+    ) -> Result<&ConfigurationTree, ConfigurationError> {
         match kiter.next() {
             Some(key) => self
                 .descend(key)
@@ -110,15 +142,15 @@ impl ConfigurationNode {
         }
     }
 
-    pub(crate) fn descend(&self, key: &Key) -> Result<&ConfigurationNode, ConfigurationError> {
+    pub(crate) fn descend(&self, key: &Key) -> Result<&ConfigurationTree, ConfigurationError> {
         match self {
-            ConfigurationNode::Value(_) => match key {
+            ConfigurationTree::Value(_) => match key {
                 Key::Array(_) => {
                     Err(ErrorCode::WrongNodeType(NodeType::Array, NodeType::Value).into())
                 }
                 Key::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Map, NodeType::Value).into()),
             },
-            ConfigurationNode::Array(array) => match key {
+            ConfigurationTree::Array(array) => match key {
                 Key::Array(index) => match array.get(*index) {
                     Some(node) => Ok(node),
                     None => Err(ErrorCode::IndexOutOfRange(*index).into()),
@@ -127,7 +159,7 @@ impl ConfigurationNode {
                     Err(ErrorCode::WrongKeyType(NodeType::Array, inner_key.to_owned()).into())
                 }
             },
-            ConfigurationNode::Map(map) => match key {
+            ConfigurationTree::Map(map) => match key {
                 Key::Array(i) => Err(ErrorCode::WrongKeyType(NodeType::Map, i.to_string()).into()),
                 Key::Map(k) => match map.get(k) {
                     Some(node) => Ok(node),
@@ -139,45 +171,45 @@ impl ConfigurationNode {
 }
 
 pub(crate) fn merge(
-    previous: ConfigurationNode,
-    next: ConfigurationNode,
-) -> Result<ConfigurationNode, ConfigurationError> {
+    previous: ConfigurationTree,
+    next: ConfigurationTree,
+) -> Result<ConfigurationTree, ConfigurationError> {
     match (previous, next) {
-        (_, vn @ ConfigurationNode::Value(_)) => Ok(vn),
-        (ConfigurationNode::Map(mp), ConfigurationNode::Map(mn)) => {
-            Ok(ConfigurationNode::Map(merge_maps(mp, mn)?))
+        (_, vn @ ConfigurationTree::Value(_)) => Ok(vn),
+        (ConfigurationTree::Map(mp), ConfigurationTree::Map(mn)) => {
+            Ok(ConfigurationTree::Map(merge_maps(mp, mn)?))
         }
-        (ConfigurationNode::Array(vp), ConfigurationNode::Array(vn)) => {
-            Ok(ConfigurationNode::Array(merge_arrays(vp, vn)))
+        (ConfigurationTree::Array(vp), ConfigurationTree::Array(vn)) => {
+            Ok(ConfigurationTree::Array(merge_arrays(vp, vn)))
         }
         (vp, vm) => Err(ErrorCode::BadNodeMerge(vp.node_type(), vm.node_type()).into()),
     }
 }
 
 fn merge_maps(
-    mut previous: HashMap<String, ConfigurationNode>,
-    mut next: HashMap<String, ConfigurationNode>,
-) -> Result<HashMap<String, ConfigurationNode>, ConfigurationError> {
+    mut previous: HashMap<String, ConfigurationTree>,
+    mut next: HashMap<String, ConfigurationTree>,
+) -> Result<HashMap<String, ConfigurationTree>, ConfigurationError> {
     for (key, next_node) in next.drain() {
         if !previous.contains_key(&key) {
             previous.insert(key.clone(), next_node.clone());
         } else {
             let previous_node = previous.remove(&key).unwrap();
             match (previous_node, next_node) {
-                (ConfigurationNode::Value(_), vn @ ConfigurationNode::Value(_)) => {
+                (ConfigurationTree::Value(_), vn @ ConfigurationTree::Value(_)) => {
                     previous.insert(key.clone(), vn.clone());
                 }
-                (ConfigurationNode::Map(mp), ConfigurationNode::Map(mn)) => {
+                (ConfigurationTree::Map(mp), ConfigurationTree::Map(mn)) => {
                     previous.insert(
                         key.clone(),
-                        ConfigurationNode::Map(
+                        ConfigurationTree::Map(
                             merge_maps(mp, mn)
                                 .map_err(|e| e.enrich_with_key(Key::Map(key.clone())))?,
                         ),
                     );
                 }
-                (ConfigurationNode::Array(vp), ConfigurationNode::Array(vn)) => {
-                    previous.insert(key.clone(), ConfigurationNode::Array(merge_arrays(vp, vn)));
+                (ConfigurationTree::Array(vp), ConfigurationTree::Array(vn)) => {
+                    previous.insert(key.clone(), ConfigurationTree::Array(merge_arrays(vp, vn)));
                 }
                 (vp, vn) => {
                     let error: ConfigurationError =
@@ -195,9 +227,9 @@ fn merge_maps(
 }
 
 fn merge_arrays(
-    mut vp: Vec<ConfigurationNode>,
-    vn: Vec<ConfigurationNode>,
-) -> Vec<ConfigurationNode> {
+    mut vp: Vec<ConfigurationTree>,
+    vn: Vec<ConfigurationTree>,
+) -> Vec<ConfigurationTree> {
     if vp.len() >= vn.len() {
         for (index, root) in vn.iter().enumerate() {
             vp[index] = root.clone();
@@ -224,15 +256,15 @@ impl Display for NodeType {
 
 macro_rules! try_from_for {
     ($($t:ty),*) => {
-        $(impl TryFrom<&ConfigurationNode> for $t {
+        $(impl TryFrom<&ConfigurationTree> for $t {
             type Error = ConfigurationError;
 
-            fn try_from(value: &ConfigurationNode) -> Result<Self, Self::Error> {
+            fn try_from(value: &ConfigurationTree) -> Result<Self, Self::Error> {
                 match value {
-                    ConfigurationNode::Value(Some(tv)) => tv.try_into(),
-                    ConfigurationNode::Value(None) => Err(ErrorCode::NullValue.into()),
-                    ConfigurationNode::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
-                    ConfigurationNode::Array(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into()),
+                    ConfigurationTree::Value(Some(tv)) => tv.try_into(),
+                    ConfigurationTree::Value(None) => Err(ErrorCode::NullValue.into()),
+                    ConfigurationTree::Map(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into()),
+                    ConfigurationTree::Array(_) => Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into()),
                 }
             }
         })*
@@ -241,17 +273,17 @@ macro_rules! try_from_for {
 
 try_from_for!(i8, i16, i32, i64, isize, f32, f64, bool, String);
 
-impl<'conf> TryFrom<&'conf ConfigurationNode> for &'conf str {
+impl<'conf> TryFrom<&'conf ConfigurationTree> for &'conf str {
     type Error = ConfigurationError;
 
-    fn try_from(value: &'conf ConfigurationNode) -> Result<Self, Self::Error> {
+    fn try_from(value: &'conf ConfigurationTree) -> Result<Self, Self::Error> {
         match value {
-            ConfigurationNode::Value(Some(tv)) => tv.try_into(),
-            ConfigurationNode::Value(None) => Ok(""),
-            ConfigurationNode::Map(_) => {
+            ConfigurationTree::Value(Some(tv)) => tv.try_into(),
+            ConfigurationTree::Value(None) => Ok(""),
+            ConfigurationTree::Map(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Map).into())
             }
-            ConfigurationNode::Array(_) => {
+            ConfigurationTree::Array(_) => {
                 Err(ErrorCode::WrongNodeType(NodeType::Value, NodeType::Array).into())
             }
         }

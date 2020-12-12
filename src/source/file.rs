@@ -6,11 +6,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Represents configuration file source.
 pub struct FileSource {
     path: PathBuf,
 }
 
 impl FileSource {
+    /// Constructs new instance of `FileSource` pointing to file at `path`.
     pub fn from_path<T: AsRef<Path>>(path: T) -> Self {
         FileSource {
             path: path.as_ref().to_path_buf(),

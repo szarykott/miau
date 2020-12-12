@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{ConfigurationNode, Key, Value},
+    configuration::{ConfigurationTree, Key, Value},
     error::ConfigurationError,
 };
 use serde::{
@@ -16,7 +16,7 @@ use std::{
     slice::Iter,
 };
 
-impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
+impl<'de> de::Deserializer<'de> for &'de ConfigurationTree {
     type Error = ConfigurationError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -24,17 +24,17 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationNode::Value(vt) => match vt {
+            ConfigurationTree::Value(vt) => match vt {
                 Some(Value::Float(v)) => visitor.visit_f64(*v),
                 Some(Value::String(v)) => visitor.visit_string(v.clone()),
                 Some(Value::SignedInteger(v)) => visitor.visit_i64(*v),
                 Some(Value::Bool(v)) => visitor.visit_bool(*v),
                 None => visitor.visit_none(),
             },
-            ConfigurationNode::Map(m) => {
+            ConfigurationTree::Map(m) => {
                 visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
             }
-            ConfigurationNode::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
+            ConfigurationTree::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
         }
     }
 
@@ -150,8 +150,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationNode::Value(Some(_)) => visitor.visit_some(self),
-            ConfigurationNode::Value(None) => visitor.visit_none(),
+            ConfigurationTree::Value(Some(_)) => visitor.visit_some(self),
+            ConfigurationTree::Value(None) => visitor.visit_none(),
             cr => Err(Error::invalid_type(
                 Unexpected::Other(&cr.node_type().to_string()),
                 &"value",
@@ -164,7 +164,7 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
         V: Visitor<'de>,
     {
         match self {
-            ConfigurationNode::Value(Some(Value::String(s))) => {
+            ConfigurationTree::Value(Some(Value::String(s))) => {
                 if s.trim().is_empty() {
                     visitor.visit_unit()
                 } else {
@@ -173,8 +173,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
                     ))
                 }
             }
-            ConfigurationNode::Value(None) => visitor.visit_unit(),
-            ConfigurationNode::Value(_) => Err(Error::invalid_type(
+            ConfigurationTree::Value(None) => visitor.visit_unit(),
+            ConfigurationTree::Value(_) => Err(Error::invalid_type(
                 Unexpected::Other("non empty value"),
                 &"null or empty value",
             )),
@@ -223,8 +223,8 @@ impl<'de> de::Deserializer<'de> for &'de ConfigurationNode {
 }
 
 struct MapAccessor<'conf>(
-    Peekable<Keys<'conf, String, ConfigurationNode>>,
-    Values<'conf, String, ConfigurationNode>,
+    Peekable<Keys<'conf, String, ConfigurationTree>>,
+    Values<'conf, String, ConfigurationTree>,
 );
 
 impl<'de> MapAccess<'de> for MapAccessor<'de> {
@@ -272,7 +272,7 @@ impl<'de> MapAccess<'de> for MapAccessor<'de> {
     }
 }
 
-struct SeqAccessor<'conf>(Enumerate<Iter<'conf, ConfigurationNode>>);
+struct SeqAccessor<'conf>(Enumerate<Iter<'conf, ConfigurationTree>>);
 
 impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
     type Error = ConfigurationError;
@@ -292,7 +292,7 @@ impl<'de> SeqAccess<'de> for SeqAccessor<'de> {
 }
 
 struct EnumAccessor<'conf> {
-    root: &'conf ConfigurationNode,
+    root: &'conf ConfigurationTree,
 }
 
 impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
@@ -304,17 +304,17 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
         V: DeserializeSeed<'de>,
     {
         match self.root {
-            ConfigurationNode::Value(Some(Value::String(v))) => {
+            ConfigurationTree::Value(Some(Value::String(v))) => {
                 let deserializer: StrDeserializer<ConfigurationError> =
                     v.as_str().into_deserializer();
                 let value = seed.deserialize(deserializer)?;
 
                 Ok((value, self))
             }
-            ConfigurationNode::Value(_) => Err(Error::custom(
+            ConfigurationTree::Value(_) => Err(Error::custom(
                 "expected string or single key map, got other value type",
             )),
-            ConfigurationNode::Map(m) => {
+            ConfigurationTree::Map(m) => {
                 if m.len() != 1 {
                     return Err(Error::invalid_length(m.len(), &"expected map of length 1"));
                 }
@@ -327,7 +327,7 @@ impl<'de> EnumAccess<'de> for EnumAccessor<'de> {
 
                 Ok((value, self))
             }
-            ConfigurationNode::Array(_) => Err(Error::invalid_type(
+            ConfigurationTree::Array(_) => Err(Error::invalid_type(
                 Unexpected::Seq,
                 &"expected string or single key map",
             )),
@@ -347,7 +347,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         T: DeserializeSeed<'de>,
     {
         match self.root {
-            ConfigurationNode::Value(Some(tv)) => seed.deserialize(tv),
+            ConfigurationTree::Value(Some(tv)) => seed.deserialize(tv),
             cr => Err(Error::custom(format!(
                 "expected value, got {}",
                 cr.node_type(),
@@ -360,7 +360,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationNode::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
+            ConfigurationTree::Array(a) => visitor.visit_seq(SeqAccessor(a.iter().enumerate())),
             cr => Err(Error::custom(format!(
                 "expected array, got {}",
                 cr.node_type(),
@@ -377,7 +377,7 @@ impl<'de> VariantAccess<'de> for EnumAccessor<'de> {
         V: Visitor<'de>,
     {
         match self.root {
-            ConfigurationNode::Map(m) => {
+            ConfigurationTree::Map(m) => {
                 visitor.visit_map(MapAccessor(m.keys().peekable(), m.values()))
             }
             cr => Err(Error::custom(format!(

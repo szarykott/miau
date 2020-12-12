@@ -1,6 +1,6 @@
 use miau::{
     builder::ConfigurationBuilder,
-    configuration::{Configuration, ConfigurationNode},
+    configuration::{Configuration, ConfigurationTree},
     error::ErrorCode,
     format::Json,
     source::InMemorySource,
@@ -99,7 +99,7 @@ fn test_error_when_deserializing_char_longer_than_one() {
 
     let json = r#"{ "character" : "longer" }"#;
 
-    let root = serde_json::from_str::<ConfigurationNode>(&json).unwrap();
+    let root = serde_json::from_str::<ConfigurationTree>(&json).unwrap();
 
     let error = root.try_convert_into::<Config>().unwrap_err();
 

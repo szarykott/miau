@@ -1,11 +1,11 @@
 use crate::{
-    configuration::{node, node::ConfigurationNode, CompoundKey, Value},
+    configuration::{tree, CompoundKey, ConfigurationTree, Value},
     error::{ConfigurationError, ErrorCode},
 };
 use std::{convert::TryFrom, iter::DoubleEndedIterator};
 
 pub fn get_result_internal<'config, T>(
-    nodes: impl DoubleEndedIterator<Item = &'config ConfigurationNode>,
+    nodes: impl DoubleEndedIterator<Item = &'config ConfigurationTree>,
     keys: &CompoundKey,
 ) -> Result<Option<T>, ConfigurationError>
 where
@@ -21,16 +21,16 @@ where
 }
 
 pub fn merge_cloned<'config>(
-    nodes: impl Iterator<Item = &'config ConfigurationNode>,
-) -> Result<ConfigurationNode, ConfigurationError> {
+    nodes: impl Iterator<Item = &'config ConfigurationTree>,
+) -> Result<ConfigurationTree, ConfigurationError> {
     merge_owned(nodes.cloned())
 }
 
 pub fn merge_owned(
-    mut nodes: impl Iterator<Item = ConfigurationNode>,
-) -> Result<ConfigurationNode, ConfigurationError> {
+    mut nodes: impl Iterator<Item = ConfigurationTree>,
+) -> Result<ConfigurationTree, ConfigurationError> {
     match nodes.next() {
-        Some(node) => nodes.try_fold(node, node::merge),
+        Some(node) => nodes.try_fold(node, tree::merge),
         None => {
             let error: ConfigurationError = ErrorCode::EmptyConfiguration.into();
             Err(error.enrich_with_context("Failed to merge configurations"))

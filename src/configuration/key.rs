@@ -4,31 +4,50 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 use std::{convert::From, fmt};
 
+///Multikey for configuration
+///
+///Consists of multiple [keys](Key)
+///
+///It is used indirectly in many functions reading from configuration.
+///Usually it should not be constructed directly.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 #[serde(transparent)]
 pub struct CompoundKey(Vec<Key>);
 
+///Configuration key
+///
+///It comes in two flavours - for arrays and maps.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 #[serde(untagged)]
 pub enum Key {
+    ///Variant that is used to index into arrays
     Array(usize),
+    ///Variant that is used as a key in maps
     Map(String),
 }
 
 impl CompoundKey {
+    /// Constructs new instance of `CompoundKey`
     pub fn new(keys: Vec<Key>) -> Self {
         CompoundKey(keys)
     }
 }
 
 impl Key {
+    /// Unwraps underlying string in map variant
+    ///
+    /// # Panics
+    /// Panics if `Key` variant is `Array`
     pub fn unwrap_map(&self) -> String {
         match self {
             Key::Array(_) => panic!("Expected key to be map key!"),
             Key::Map(s) => s.clone(),
         }
     }
-
+    /// Unwraps underlying usize in map variant
+    ///
+    /// # Panics
+    /// Panics if `Key` variant is `Map`
     pub fn unwrap_array(&self) -> usize {
         match self {
             Key::Array(i) => *i,
@@ -90,6 +109,7 @@ impl From<&str> for Key {
     }
 }
 
+/// Constructs [`CompoundKey`](CompoundKey)
 #[macro_export]
 macro_rules! key {
     [$($val:expr),*] => {{

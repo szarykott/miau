@@ -2,13 +2,13 @@ use crate::configuration::{CompoundKey, Key, NodeType};
 use serde::de;
 use std::{convert::From, fmt::Display, ops::Deref};
 
-/// Represents all error that might occur during all stages of processing configuration.
+/// Represents all errors that might occur at all stages of processing configuration.
 #[derive(Debug)]
 pub struct ConfigurationError {
     inner: Box<ErrorImpl>,
 }
 
-/// Underlying implementation of ConfigurationError.
+/// Underlying implementation of [`ConfigurationError`](ConfigurationError).
 #[derive(Debug)]
 pub struct ErrorImpl {
     code: ErrorCode,
@@ -16,6 +16,7 @@ pub struct ErrorImpl {
     path: Option<Vec<Key>>,
 }
 
+/// Describes underlying cause of error.
 #[derive(Debug)]
 pub enum ErrorCode {
     /// Informs that operation is not valid for given node type e.g descending into value node.
@@ -57,11 +58,21 @@ impl ConfigurationError {
     ///
     /// Used to put more contextual information in the error to facilitate debugging issues.
     /// One can put e.g. path to file that failed to open in error message this way.
-    pub fn enrich_with_context<T: Into<String>>(mut self, message: T) -> Self {
+    ///
+    ///# Example
+    ///```rust
+    ///use miau::error::{ConfigurationError, ErrorCode};
+    ///
+    ///let error: ConfigurationError = ErrorCode::NullValue.into();
+    ///
+    ///let enriched_error = error
+    ///    .enrich_with_context("Detailed description of contextual information");
+    ///```
+    pub fn enrich_with_context<T: Display>(mut self, message: T) -> Self {
         match self.inner.context {
-            Some(ref mut context) => context.push(message.into()),
+            Some(ref mut context) => context.push(message.to_string()),
             None => {
-                self.inner.context = Some(vec![message.into()]);
+                self.inner.context = Some(vec![message.to_string()]);
             }
         }
         self
@@ -71,6 +82,17 @@ impl ConfigurationError {
     ///
     /// Used to put more contextual information in the error to facilitate debugging issues.
     /// One can put information about location in configuration tree in error with this function.
+    ///
+    ///# Example
+    ///```rust
+    ///use miau::error::{ConfigurationError, ErrorCode};
+    ///use miau::configuration::Key;
+    ///
+    ///let error: ConfigurationError = ErrorCode::NullValue.into();
+    ///
+    ///let enriched_error = error
+    ///    .enrich_with_key(Key::Map("key".to_string()));
+    ///```
     pub fn enrich_with_key(mut self, key: Key) -> Self {
         match self.inner.path {
             Some(ref mut path) => {
@@ -103,16 +125,31 @@ impl ConfigurationError {
     }
 
     /// Returns an object that displays error in pretty way.
+    ///
+    ///# Example
+    ///```rust
+    ///use miau::error::{ConfigurationError, ErrorCode};
+    ///use miau::configuration::Key;
+    ///
+    ///let error: ConfigurationError = ErrorCode::NullValue.into();
+    ///
+    ///println!("Basic display : {}", error);
+    ///println!("Pretty display : {}", error.pretty_display());
+    ///```
     pub fn pretty_display(&self) -> PrettyConfigurationDisplay {
         PrettyConfigurationDisplay(self)
     }
 }
 
 impl ErrorImpl {
+    /// Returns reference to underlying cause of the error.
     pub fn get_code(&self) -> &ErrorCode {
         &self.code
     }
 
+    /// Returns path in configuration at which error occured.
+    ///
+    /// Returned value is a slice with configuration keys counting from root.
     pub fn get_path(&self) -> Option<&[Key]> {
         if let Some(ref path) = self.path {
             Some(path)
@@ -121,6 +158,9 @@ impl ErrorImpl {
         }
     }
 
+    /// Returns additional context attached to error.
+    ///
+    /// This information can contain, for instance, name of the file that was not found.
     pub fn get_context(&self) -> Option<&[String]> {
         if let Some(ref context) = self.context {
             Some(context)
@@ -166,6 +206,9 @@ impl Display for ConfigurationError {
     }
 }
 
+///Wrapper that displays in a pretty way.
+///
+///Not of any other use besides that.
 pub struct PrettyConfigurationDisplay<'e>(&'e ConfigurationError);
 
 impl<'e> Display for PrettyConfigurationDisplay<'e> {

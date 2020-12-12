@@ -6,27 +6,35 @@ use crate::{
 };
 use async_trait::async_trait;
 
-/// Configuration provider where distintion between source and format does not make sense or does little sense.
-/// Examples might be other configurations already in memory, environment variables or others.
+/// Represents configuration source and its associated format.
+///
+/// Can be as an aggregator of the two or by itself to represent source in which distinction between source and format is blurry.
 pub trait Provider {
+    /// Collects given source into `Configuration`.
     fn collect(&self) -> Result<Configuration, ConfigurationError>;
+    /// Describes this provider.
     fn describe(&self) -> ConfigurationInfo;
 }
 
-/// Async provider where distinction between source and format does not make sense or makes little sense.
+/// Represents asynchronous configuration source and its associated format.
+///
+/// Can be as an aggregator of the two or by itself to represent source in which distinction between source and format is blurry.
 #[async_trait]
 pub trait AsyncProvider: Send + Sync {
+    /// Collects given source into `Configuration`.
     async fn collect(&self) -> Result<Configuration, ConfigurationError>;
+    /// Describes this provider.
     fn describe(&self) -> ConfigurationInfo;
 }
 
-/// Combines source and transformer into single provider.
+/// Combines source and format into single provider.
 pub struct ProviderStruct<S, T> {
     source: S,
     format: T,
 }
 
 impl<S: Source, T: Format> ProviderStruct<S, T> {
+    /// Constructs new synchronous source provider.
     pub fn synchronous(s: S, t: T) -> Self {
         ProviderStruct {
             source: s,
@@ -40,6 +48,7 @@ where
     S: AsyncSource + Send + Sync,
     T: Format + Send + Sync,
 {
+    /// Constructs new asynchronous source provider.
     pub fn asynchronous(s: S, t: T) -> Self {
         ProviderStruct {
             source: s,

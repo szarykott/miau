@@ -104,25 +104,6 @@ fn test_file_source_ini() {
 }
 
 #[test]
-fn test_file_source_xml() {
-    // done like this for correct execution on different OS
-    let path: PathBuf = ["tests", "files", "config1.xml"].iter().collect();
-
-    let mut builder = ConfigurationBuilder::default();
-    builder.add(FileSource::from_path(path), format::xml());
-
-    let configuration = builder.build().unwrap();
-
-    println!("{:#?}", configuration);
-
-    assert_eq!(Some(1), configuration.get("value1"));
-    assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
-    assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
-}
-
-#[test]
 fn test_missing_file_source() {
     // done like this for correct execution on different OS
     let path: PathBuf = ["tests", "files", "not_present.json"].iter().collect();

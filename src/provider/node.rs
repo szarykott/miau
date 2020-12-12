@@ -1,10 +1,10 @@
 use crate::{
-    configuration::{Configuration, ConfigurationInfo, ConfigurationNode},
+    configuration::{Configuration, ConfigurationInfo, ConfigurationTree},
     error::ConfigurationError,
     provider::Provider,
 };
 
-impl Provider for ConfigurationNode {
+impl Provider for ConfigurationTree {
     fn collect(&self) -> Result<Configuration, ConfigurationError> {
         Ok(self.clone().into())
     }

@@ -1,19 +1,22 @@
 use super::Provider;
 use crate::{
-    configuration::{merge, Configuration, ConfigurationInfo, ConfigurationNode, Key, Value},
+    configuration::{merge, Configuration, ConfigurationInfo, ConfigurationTree, Key, Value},
     parsing,
 };
 use std::{collections::HashMap, convert::Into, default::Default, env};
 
+/// Provides environmental variables as configuration.
 pub struct EnvironmentProvider {
     prefix: Option<String>,
 }
 
 impl EnvironmentProvider {
+    /// Creates new `EnvironmentProvider` that retrives all environmental variables.
     pub fn new() -> Self {
         EnvironmentProvider { prefix: None }
     }
 
+    /// Creates new `EnvironmentProvider` that retrives environmental variables prefixed with `prefix`.
     pub fn with_prefix<T: Into<String>>(prefix: T) -> Self {
         EnvironmentProvider {
             prefix: Some(prefix.into()),
@@ -38,8 +41,8 @@ impl EnvironmentProvider {
     }
 }
 
-fn push(keys: impl Iterator<Item = (String, String)>) -> Option<ConfigurationNode> {
-    let mut trees: Vec<ConfigurationNode> = Vec::new();
+fn push(keys: impl Iterator<Item = (String, String)>) -> Option<ConfigurationTree> {
+    let mut trees: Vec<ConfigurationTree> = Vec::new();
     for (key, value) in keys {
         if let Ok(ckey) = parsing::str_to_key(key.as_ref()) {
             let all_map = ckey.iter().all(|k| std::matches!(k, Key::Map(..)));
@@ -65,14 +68,14 @@ fn push(keys: impl Iterator<Item = (String, String)>) -> Option<ConfigurationNod
     }
 }
 
-fn create_tree(mut keys: impl Iterator<Item = String>, value: String) -> ConfigurationNode {
+fn create_tree(mut keys: impl Iterator<Item = String>, value: String) -> ConfigurationTree {
     match keys.next() {
         Some(key) => {
             let mut map = HashMap::new();
             map.insert(key, create_tree(keys, value));
-            ConfigurationNode::Map(map)
+            ConfigurationTree::Map(map)
         }
-        None => ConfigurationNode::Value(Some(Value::String(value))),
+        None => ConfigurationTree::Value(Some(Value::String(value))),
     }
 }
 

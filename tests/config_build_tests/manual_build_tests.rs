@@ -1,4 +1,4 @@
-use miau::configuration::{ConfigurationNode, Value};
+use miau::configuration::{ConfigurationTree, Value};
 use std::collections::HashMap;
 
 #[test]
@@ -7,19 +7,19 @@ fn build_tree_manually() {
 
     root.insert(
         "key1".to_string(),
-        ConfigurationNode::Value(Some(Value::String("value1".into()))),
+        ConfigurationTree::Value(Some(Value::String("value1".into()))),
     );
     root.insert(
         "key2".to_string(),
-        ConfigurationNode::Array(vec![
-            ConfigurationNode::Value(Some(Value::String("value2".into()))),
-            ConfigurationNode::Value(Some(Value::String("value3".into()))),
-            ConfigurationNode::Value(Some(Value::Bool(true))),
-            ConfigurationNode::Value(None),
+        ConfigurationTree::Array(vec![
+            ConfigurationTree::Value(Some(Value::String("value2".into()))),
+            ConfigurationTree::Value(Some(Value::String("value3".into()))),
+            ConfigurationTree::Value(Some(Value::Bool(true))),
+            ConfigurationTree::Value(None),
         ]),
     );
 
-    let _cfg = ConfigurationNode::Map(root);
+    let _cfg = ConfigurationTree::Map(root);
 
     // we got here we are all right!
     assert!(true)

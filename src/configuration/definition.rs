@@ -1,28 +1,34 @@
-use super::{ConfigurationInfo, ConfigurationNode};
+use super::{ConfigurationInfo, ConfigurationTree};
 use std::convert::From;
 
+/// Holds informations about configuration along with configuration tree root.
 #[derive(Debug, Clone)]
 pub struct ConfigurationDefinition {
     pub(crate) info: ConfigurationInfo,
-    pub(crate) root: ConfigurationNode,
+    pub(crate) root: ConfigurationTree,
 }
 
+/// Borrowed version of [`ConfigurationDefinition`]
 #[derive(Debug)]
 pub struct ConfigurationDefinitionLens<'config> {
     pub(crate) info: &'config ConfigurationInfo,
-    pub(crate) node: Option<&'config ConfigurationNode>,
+    pub(crate) node: Option<&'config ConfigurationTree>,
 }
 
 impl ConfigurationDefinition {
-    pub fn new(info: ConfigurationInfo, root: ConfigurationNode) -> Self {
+    /// Creates new instance of [`ConfigurationDefinition`]
+    pub fn new(info: ConfigurationInfo, root: ConfigurationTree) -> Self {
         ConfigurationDefinition { info, root }
     }
 }
 
 impl<'config> ConfigurationDefinitionLens<'config> {
+    /// Returns new [`ConfigurationDefinitionLens`] with `func` applied to node.
+    ///
+    /// It is mainly meant as a way to abstract away lensing into further parts of coniguration tree.
     pub fn mutate<F>(&self, func: F) -> Self
     where
-        F: Fn(&'config ConfigurationNode) -> Option<&'config ConfigurationNode>,
+        F: Fn(&'config ConfigurationTree) -> Option<&'config ConfigurationTree>,
     {
         ConfigurationDefinitionLens {
             info: self.info,

@@ -1,4 +1,6 @@
-use miau::{builder::ConfigurationBuilder, format, source::InMemorySource};
+use miau::{
+    builder::ConfigurationBuilder, configuration::ConfigurationRead, format, source::InMemorySource,
+};
 use serde::Serialize;
 
 #[derive(Serialize, Debug)]
@@ -27,7 +29,13 @@ fn test_msgpack_format() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some("aha"), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some(true), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }

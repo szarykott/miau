@@ -1,6 +1,6 @@
 use super::{
     common, CompoundKey, Configuration, ConfigurationDefinition, ConfigurationDefinitionLens,
-    ConfigurationTree, Value,
+    ConfigurationRead, ConfigurationTree, Value,
 };
 use crate::error::ConfigurationError;
 use serde::de::DeserializeOwned;
@@ -58,40 +58,6 @@ impl<'config> Lens<'config> {
         Ok(Lens { roots: new_roots })
     }
 
-    /// Retrieves value stored in `Lens` under given `keys`.
-    ///
-    /// If no value is found or key transformation fails `None` is returned.
-    /// [`get_result`](Self::get_result) provides more insight into root cause of error.
-    pub fn get<T, S>(&'config self, keys: S) -> Option<T>
-    where
-        T: TryFrom<&'config Value, Error = ConfigurationError>,
-        S: TryInto<CompoundKey>,
-    {
-        self.get_result_internal(&keys.try_into().ok()?)
-            .unwrap_or_default()
-    }
-
-    /// Retrieves value stored in `Lens` under given `keys`.
-    ///
-    /// If key transformation fails error is returned. Value is returned if found, `None` otherwise.
-    pub fn get_result<T, S>(&'config self, keys: S) -> Result<Option<T>, ConfigurationError>
-    where
-        T: TryFrom<&'config Value, Error = ConfigurationError>,
-        S: TryInto<CompoundKey, Error = ConfigurationError>,
-    {
-        self.get_result_internal(&keys.try_into()?)
-    }
-
-    fn get_result_internal<T>(
-        &'config self,
-        keys: &CompoundKey,
-    ) -> Result<Option<T>, ConfigurationError>
-    where
-        T: TryFrom<&'config Value, Error = ConfigurationError>,
-    {
-        common::get_result_internal(self.roots.iter().filter_map(|def| def.node), keys)
-    }
-
     /// Deserializes `Lens` into strongly typed struct.
     ///
     /// It is only required that struct to be deserialized to implements `Deserialize`
@@ -104,6 +70,17 @@ impl<'config> Lens<'config> {
     /// Merges trees contained in `Lens` into one tree by cloning them.
     pub fn merge_cloned(mut self) -> Result<ConfigurationTree, ConfigurationError> {
         common::merge_cloned(self.roots.drain(..).filter_map(|def| def.node))
+    }
+}
+
+impl<'config, T, K> ConfigurationRead<'config, T, K> for Lens<'config>
+where
+    T: TryFrom<&'config Value, Error = ConfigurationError>,
+    K: TryInto<CompoundKey, Error = ConfigurationError>,
+{
+    fn get_result(&'config self, keys: K) -> Result<Option<T>, ConfigurationError> {
+        let keys = keys.try_into()?;
+        common::get_result_internal(self.roots.iter().filter_map(|def| def.node), &keys)
     }
 }
 

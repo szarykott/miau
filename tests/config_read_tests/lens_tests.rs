@@ -1,4 +1,7 @@
-use miau::{builder::ConfigurationBuilder, error::ErrorCode, format::Json, source::InMemorySource};
+use miau::{
+    builder::ConfigurationBuilder, configuration::ConfigurationRead, error::ErrorCode,
+    format::Json, source::InMemorySource,
+};
 use serde::Deserialize;
 
 static TEST_JSON: &'static str = r#"
@@ -96,7 +99,10 @@ fn test_lensing_with_multiple_configs() {
     assert_eq!(Some(2), lens.get("array:[1]"));
     assert_eq!(Some(3), lens.get("array:[2]"));
     assert_eq!(Some("2".to_string()), lens.get("value")); // TODO: mention this to string in docs
-    assert_eq!(None, lens.get::<i32, &str>("array:[3]"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, i32, &str>::get(&lens, "array:[3]")
+    );
 }
 
 // ----------------- Strongly typed tests ------------------------- //

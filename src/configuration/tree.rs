@@ -1,5 +1,5 @@
 use crate::{
-    configuration::{CompoundKey, Key, Value},
+    configuration::{CompoundKey, ConfigurationRead, Key, Value},
     error::{ConfigurationError, ErrorCode},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -35,37 +35,6 @@ pub enum NodeType {
 }
 
 impl ConfigurationTree {
-    /// Retrieves value stored in `ConfigurationTree` under given `keys`.
-    ///
-    /// If no value is found or key transformation fails `None` is returned.
-    /// [`get_result`](Self::get_result) provides more insight into root cause of error.
-    ///
-    /// # Example
-    /// TODO: add example
-    pub fn get<'node, T, K>(&'node self, keys: K) -> Option<T>
-    where
-        T: TryFrom<&'node Value, Error = ConfigurationError>,
-        K: TryInto<CompoundKey>,
-    {
-        let keys = keys.try_into().ok()?;
-        self.get_result_internal(&keys).ok().unwrap_or_default()
-    }
-
-    /// Retrieves value stored in `ConfigurationTree` under given `keys`.
-    ///
-    /// If key transformation fails error is returned. Value is returned if found, `None` otherwise.
-    ///
-    /// # Example
-    /// TODO: add example
-    pub fn get_result<'a, T, K>(&'a self, keys: K) -> Result<Option<T>, ConfigurationError>
-    where
-        T: TryFrom<&'a Value, Error = ConfigurationError>,
-        K: TryInto<CompoundKey, Error = ConfigurationError>,
-    {
-        let keys = keys.try_into()?;
-        self.get_result_internal(&keys)
-    }
-
     pub(crate) fn get_result_internal<'a, T>(
         &'a self,
         keys: &CompoundKey,
@@ -167,6 +136,17 @@ impl ConfigurationTree {
                 },
             },
         }
+    }
+}
+
+impl<'config, T, K> ConfigurationRead<'config, T, K> for ConfigurationTree
+where
+    T: TryFrom<&'config Value, Error = ConfigurationError>,
+    K: TryInto<CompoundKey, Error = ConfigurationError>,
+{
+    fn get_result(&'config self, keys: K) -> Result<Option<T>, ConfigurationError> {
+        let keys = keys.try_into()?;
+        self.get_result_internal(&keys)
     }
 }
 

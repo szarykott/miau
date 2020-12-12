@@ -1,7 +1,7 @@
 use crate::{
     configuration::{
-        common, CompoundKey, ConfigurationDefinition, ConfigurationInfo, ConfigurationTree, Lens,
-        Value,
+        common, CompoundKey, ConfigurationDefinition, ConfigurationInfo, ConfigurationRead,
+        ConfigurationTree, Lens, Value,
     },
     error::ConfigurationError,
 };
@@ -33,46 +33,6 @@ impl Configuration {
     /// Creates new empty `Configuration`.
     pub fn new_empty() -> Self {
         Configuration { roots: vec![] }
-    }
-
-    /// Retrieves value stored in `Configuration` under given `keys`.
-    ///
-    /// If no value is found or key transformation fails `None` is returned.
-    /// [`get_result`](Self::get_result) provides more insight into root cause of error.
-    ///
-    /// # Example
-    /// TODO: add example
-    pub fn get<'a, T, S>(&'a self, keys: S) -> Option<T>
-    where
-        T: TryFrom<&'a Value, Error = ConfigurationError>,
-        S: TryInto<CompoundKey>,
-    {
-        self.get_result_internal(keys.try_into().ok()?)
-            .unwrap_or_default()
-    }
-
-    /// Retrieves value stored in `Configuration` under given `keys`.
-    ///
-    /// If key transformation fails error is returned. Value is returned if found, `None` otherwise.
-    ///
-    /// # Example
-    /// TODO: add example
-    pub fn get_result<'a, T, S>(&'a self, keys: S) -> Result<Option<T>, ConfigurationError>
-    where
-        T: TryFrom<&'a Value, Error = ConfigurationError>,
-        S: TryInto<CompoundKey, Error = ConfigurationError>,
-    {
-        self.get_result_internal(keys.try_into()?)
-    }
-
-    fn get_result_internal<'a, T>(
-        &'a self,
-        keys: CompoundKey,
-    ) -> Result<Option<T>, ConfigurationError>
-    where
-        T: TryFrom<&'a Value, Error = ConfigurationError>,
-    {
-        common::get_result_internal(self.roots.iter().map(|def| &def.root), &keys)
     }
 
     /// Creates `Lens` from this `Configuration`.
@@ -108,6 +68,17 @@ impl Configuration {
     ///```
     pub fn infos(&self) -> impl Iterator<Item = &ConfigurationInfo> {
         self.roots.iter().map(|def| &def.info)
+    }
+}
+
+impl<'config, T, K> ConfigurationRead<'config, T, K> for Configuration
+where
+    T: TryFrom<&'config Value, Error = ConfigurationError>,
+    K: TryInto<CompoundKey, Error = ConfigurationError>,
+{
+    fn get_result(&'config self, keys: K) -> Result<Option<T>, ConfigurationError> {
+        let keys = keys.try_into()?;
+        common::get_result_internal(self.roots.iter().map(|def| &def.root), &keys)
     }
 }
 

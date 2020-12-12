@@ -1,6 +1,6 @@
 use miau::{
-    builder::ConfigurationBuilder, format::Json, provider::EnvironmentProvider,
-    source::InMemorySource,
+    builder::ConfigurationBuilder, configuration::ConfigurationRead, format::Json,
+    provider::EnvironmentProvider, source::InMemorySource,
 };
 use serde_json::json;
 use std::env;
@@ -72,6 +72,6 @@ fn test_environment_source_with_prefix() {
 
     assert_eq!(
         None,
-        configuration.get::<&str, &str>("notmy_t3_awesome_key")
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "notmy_t3_awesome_key")
     );
 }

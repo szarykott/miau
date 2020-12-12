@@ -1,6 +1,9 @@
 use miau::{
-    builder::ConfigurationBuilder, configuration::Configuration, error::ErrorCode, format::Json,
-    key, source::InMemorySource,
+    builder::ConfigurationBuilder,
+    configuration::{Configuration, ConfigurationRead},
+    error::ErrorCode,
+    format::Json,
+    source::InMemorySource,
 };
 use rstest::rstest;
 
@@ -156,7 +159,6 @@ fn test_single_value_integer_config_build_json() {
         .unwrap();
 
     assert_eq!(Some(2i32), result.get(""));
-    assert_eq!(Some(2i32), result.get(key!()));
 }
 
 #[test]
@@ -170,7 +172,6 @@ fn test_single_map_entry_config_build_json() {
         .unwrap();
 
     assert_eq!(Some(2), result.get("value"));
-    assert_eq!(Some(2), result.get(key!("value")));
 }
 
 #[test]
@@ -338,11 +339,17 @@ fn test_structs_of_arrays_build_json() {
     assert_eq!(Some(11), result.get("structure:a1:[0]"));
     assert_eq!(Some(42), result.get("structure:a1:[1]"));
     assert_eq!(Some(3), result.get("structure:a1:[2]"));
-    assert_eq!(None, result.get::<i32, &str>("structure:a1:[3]"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, i32, &str>::get(&result, "structure:a1:[3]")
+    );
     assert_eq!(Some(4), result.get("structure:a2:[0]"));
     assert_eq!(Some(5), result.get("structure:a2:[1]"));
     assert_eq!(Some(3), result.get("structure:a2:[2]"));
-    assert_eq!(None, result.get::<i32, &str>("structure:a2:[3]"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, i32, &str>::get(&result, "structure:a2:[3]")
+    );
 }
 
 #[test]
@@ -379,7 +386,10 @@ fn test_triple_nested_map_build() {
 
     assert_eq!(Some(false), result.get("key1:key2:key3"));
     assert_eq!(Some(false), result.get("key1:key2:key4"));
-    assert_eq!(None, result.get::<i32, &str>("key1:key2:key5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, i32, &str>::get(&result, "key1:key2:key5")
+    );
 }
 
 // ------------------ Failure tests -------------------------- //
@@ -393,7 +403,7 @@ fn test_get_result_non_existing_key() {
 
     let configuration = builder.build().unwrap();
 
-    let value = configuration.get_result::<i32, &str>("value").unwrap();
+    let value = ConfigurationRead::<'_, i32, &str>::get_result(&configuration, "value").unwrap();
 
     assert_eq!(None, value);
 }
@@ -407,7 +417,7 @@ fn test_get_result_wrong_key_type() {
 
     let configuration = builder.build().unwrap();
 
-    let value = configuration.get_result::<i32, &str>("key:key").unwrap();
+    let value = ConfigurationRead::<'_, i32, &str>::get_result(&configuration, "key:key").unwrap();
 
     assert_eq!(None, value);
 }
@@ -422,7 +432,7 @@ fn test_get_result_key_unparsable() {
     let configuration = builder.build().unwrap();
 
     let key = "key:[A]:key";
-    let error = configuration.get_result::<i32, &str>(key).unwrap_err();
+    let error = ConfigurationRead::<'_, i32, &str>::get_result(&configuration, key).unwrap_err();
 
     let error_string = error.to_string();
 

@@ -4,6 +4,7 @@ mod info;
 mod key;
 mod lens;
 mod plural;
+mod read;
 mod tree;
 mod value;
 
@@ -12,6 +13,7 @@ pub use self::info::ConfigurationInfo;
 pub use self::key::{CompoundKey, Key};
 pub use self::lens::Lens;
 pub use self::plural::Configuration;
+pub use self::read::ConfigurationRead;
 pub use self::tree::{ConfigurationTree, NodeType};
 pub use self::value::Value;
 

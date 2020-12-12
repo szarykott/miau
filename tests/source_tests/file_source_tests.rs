@@ -1,4 +1,7 @@
-use miau::{builder::ConfigurationBuilder, error::ErrorCode, format, source::FileSource};
+use miau::{
+    builder::ConfigurationBuilder, configuration::ConfigurationRead, error::ErrorCode, format,
+    source::FileSource,
+};
 use std::path::PathBuf;
 
 #[test]
@@ -13,9 +16,15 @@ fn test_file_source_json() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]
@@ -30,9 +39,15 @@ fn test_file_source_yaml() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]
@@ -47,9 +62,15 @@ fn test_file_source_toml() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]
@@ -64,9 +85,15 @@ fn test_file_source_json5() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]
@@ -81,9 +108,15 @@ fn test_file_source_ron() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]
@@ -98,9 +131,15 @@ fn test_file_source_ini() {
 
     assert_eq!(Some(1), configuration.get("value1"));
     assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(None, configuration.get::<&str, &str>("value3"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
+    );
     assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(None, configuration.get::<&str, &str>("value5"));
+    assert_eq!(
+        None,
+        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
+    );
 }
 
 #[test]

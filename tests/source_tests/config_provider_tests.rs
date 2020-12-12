@@ -1,5 +1,7 @@
 use miau::{
-    builder::ConfigurationBuilder, configuration::ConfigurationTree, format::Json,
+    builder::ConfigurationBuilder,
+    configuration::{ConfigurationRead, ConfigurationTree},
+    format::Json,
     source::InMemorySource,
 };
 use serde_json::{from_str, json};

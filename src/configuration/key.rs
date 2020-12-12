@@ -109,16 +109,6 @@ impl From<&str> for Key {
     }
 }
 
-/// Constructs [`CompoundKey`](CompoundKey)
-#[macro_export]
-macro_rules! key {
-    [$($val:expr),*] => {{
-        let mut ck : Vec<$crate::configuration::Key> = Vec::new();
-        $(ck.push($crate::configuration::Key::from($val));)*
-        $crate::configuration::CompoundKey::new(ck)
-    }};
-}
-
 macro_rules! impl_key_from {
     ($($t:ty),*) => {
         $(impl From<$t> for Key {

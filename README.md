@@ -28,7 +28,7 @@ All aforementioned entities are **traits** exposed by the library. What it means
 
 ![flow of data](./assets/basicflow.png)
 
-Providers are lazy, which means they execute no action unless told so. This is the reponsibility of `Builder` and `AsyncBuilder` to invoke providers they **own** and properly layer resulting entities to form `Configuration`.
+Providers are lazy, which means they execute no action unless told so. This is the reponsibility of `ConfigurationBuilder` and `AsyncConfigurationBuilder` to invoke providers they **own** and properly layer resulting entities to form `Configuration`.
 
 `Configuration` consists of ordered trees (it can be said that it is an ordered forest), one per each source, that are layered in order to provide correct overwriting behaviour for different environments of your application.
 

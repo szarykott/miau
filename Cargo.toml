@@ -7,8 +7,8 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+all = ["experimental_serde_ron", "ini", "json", "msgpack", "serde_json5", "serde_toml", "yaml"]
 experimental_serde_ron = ["ron"]
-experimental_xml = ["serde-xml-rs"]
 ini = ["serde_ini"]
 json = ["serde_json"]
 msgpack = ["rmp-serde"]

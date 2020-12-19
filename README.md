@@ -53,3 +53,8 @@ Configuration node is a tree like structure that corresponds to exactly one conf
 Configuration is an ordered collection of configuration nodes. Order of nodes corresponds to order of adding them to builder. Each node corresponds to one source.
 
 When key from configuration is requested nodes are searched for a match in revers order, starting from most recent ones.
+
+```mermaid
+graph LR
+    Start --> Stop
+```

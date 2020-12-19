@@ -1,0 +1,27 @@
+{
+  "name": "miau",
+  "version": "1.0.0",
+  "description": "Utility for miau",
+  "main": "index.js",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "mermaid": "node_modules/.bin/mmdc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szarykott/configuration-rs.git"
+  },
+  "author": "Radosław Kot",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/szarykott/configuration-rs/issues"
+  },
+  "homepage": "https://github.com/szarykott/configuration-rs#readme",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^8.8.4"
+  }
+}

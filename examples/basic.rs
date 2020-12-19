@@ -26,11 +26,11 @@ fn main() {
     let result = builder
         .add_provider(EnvironmentProvider::with_prefix("ASDFA")) // providers are special sources that are simpler to handle without source,format division
         .add(
-            FileSource::from_path("./examples/files/config.json"), // specify source first
+            FileSource::from_path("./files/config.json"), // specify source first
             format::json(), // predefined formats can be specified with format::* helper methods
         )
         .add(
-            FileSource::from_path("./examples/files/config.json5"),
+            FileSource::from_path("./files/config.json5"),
             Json5::default(), // structs implementing `Format` trait can also be used directly
         )
         .add_provider(some_collection)
@@ -38,7 +38,10 @@ fn main() {
 
     let configuration = match result {
         Ok(configuration) => configuration,
-        Err(e) => panic!("Failed to create configuration : {}", e),
+        Err(e) => panic!(
+            "Please make sure you run `cargo run` from examples folder! {}",
+            e.pretty_display()
+        ),
     };
 
     env::remove_var("ASDFA_VAR");

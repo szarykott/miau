@@ -261,6 +261,30 @@ fn test_deserialization_struct_with_hashmap() {
     assert_eq!(None, config.inner.get("c"));
 }
 
+#[test]
+fn test_deserialization_struct_with_hashmap_string_values() {
+    #[derive(Deserialize)]
+    struct Config {
+        inner: HashMap<String, String>,
+    }
+
+    let config_str = serde_json::json!({
+        "inner": {
+            "a" : "a",
+            "b" : "b"
+        }
+    })
+    .to_string();
+
+    let root = serde_json::from_str::<Configuration>(&config_str).unwrap();
+
+    let config = root.try_convert_into::<Config>().unwrap();
+
+    assert_eq!(Some(&"a".to_string()), config.inner.get("a"));
+    assert_eq!(Some(&"b".to_string()), config.inner.get("b"));
+    assert_eq!(None, config.inner.get("c"));
+}
+
 #[derive(Deserialize, PartialEq, Debug)]
 enum DaEnum {
     Unit,

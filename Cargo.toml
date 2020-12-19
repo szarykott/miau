@@ -3,6 +3,13 @@ authors = ["Radosław Kot <rdkt13@gmail.com>"]
 categories = ["asynchronous", "config"]
 description = "Async aware and extensible layered configuration system"
 edition = "2018"
+exclude = [
+  "assets/*",
+  "tests/*",
+  "generate_assets.sh",
+  "package.json",
+  "package-lock.json",
+]
 homepage = "https://github.com/szarykott/miau"
 keywords = ["configuration", "async", "config", "layered"]
 license-file = "LICENSE.md"
@@ -21,8 +28,6 @@ msgpack = ["rmp-serde"]
 serde_json5 = ["json5"]
 serde_toml = ["toml"]
 yaml = ["serde_yaml"]
-
-# TODO: Use patch version as well in here
 
 [dependencies]
 async-trait = {version = "0.1.42"}

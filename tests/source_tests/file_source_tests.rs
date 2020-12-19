@@ -97,29 +97,6 @@ fn test_file_source_json5() {
 }
 
 #[test]
-fn test_file_source_ron() {
-    // done like this for correct execution on different OS
-    let path: PathBuf = ["tests", "files", "config1.ron"].iter().collect();
-
-    let mut builder = ConfigurationBuilder::default();
-    builder.add(FileSource::from_path(path), format::ron());
-
-    let configuration = builder.build().unwrap();
-
-    assert_eq!(Some(1), configuration.get("value1"));
-    assert_eq!(Some(true), configuration.get("value2"));
-    assert_eq!(
-        None,
-        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value3")
-    );
-    assert_eq!(Some("aha"), configuration.get("value4"));
-    assert_eq!(
-        None,
-        ConfigurationRead::<'_, &str, &str>::get(&configuration, "value5")
-    );
-}
-
-#[test]
 fn test_file_source_ini() {
     // done like this for correct execution on different OS
     let path: PathBuf = ["tests", "files", "config1.ini"].iter().collect();

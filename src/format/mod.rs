@@ -23,8 +23,6 @@ pub use json::Json;
 pub use msgpack::Msgpack;
 #[cfg(feature = "serde_json5")]
 pub use serde_json5::Json5;
-#[cfg(feature = "experimental_serde_ron")]
-pub use serde_ron::Ron;
 #[cfg(feature = "serde_toml")]
 pub use serde_toml::Toml;
 #[cfg(feature = "yaml")]
@@ -73,14 +71,6 @@ pub fn toml() -> Toml {
 #[cfg(feature = "serde_json5")]
 pub fn json5() -> Json5 {
     Json5::default()
-}
-
-/// Utility function to create `ron` format deserializer.
-///
-/// Uses external deserializer so it is only as good as it is.
-#[cfg(feature = "experimental_serde_ron")]
-pub fn ron() -> Ron {
-    Ron::default()
 }
 
 /// Utility function to create `message pack` format deserializer.

@@ -16,7 +16,18 @@ impl InMemorySource {
     ///Creates new `InMemorySource` from `&str`.
     ///
     ///# Example
-    ///TODO: Add example
+    ///```rust
+    ///use miau::builder::ConfigurationBuilder;
+    ///use miau::source::InMemorySource;
+    ///use miau::format::Json;
+    ///
+    ///let mut builder = ConfigurationBuilder::default();
+    ///
+    ///let c1 = r#"{"value" : 1}"#;
+    ///
+    ///builder.add(InMemorySource::from_string_slice(&c1), Json::new());
+    ///let configuration = builder.build().unwrap(); // do not do it in you app
+    ///```
     pub fn from_string_slice(string: &str) -> Self {
         InMemorySource {
             value: string.as_bytes().to_vec(),
@@ -24,9 +35,6 @@ impl InMemorySource {
     }
 
     ///Creates new `InMemorySource` from `Vec<u8>`.
-    ///
-    ///# Example
-    ///TODO: Add example
     pub fn from_bytes(input: Vec<u8>) -> Self {
         InMemorySource { value: input }
     }

@@ -7,8 +7,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-all = ["experimental_serde_ron", "ini", "json", "msgpack", "serde_json5", "serde_toml", "yaml"]
-experimental_serde_ron = ["ron"]
+all = ["ini", "json", "msgpack", "serde_json5", "serde_toml", "yaml"]
 ini = ["serde_ini"]
 json = ["serde_json"]
 msgpack = ["rmp-serde"]
@@ -19,22 +18,20 @@ yaml = ["serde_yaml"]
 # TODO: Use patch version as well in here
 
 [dependencies]
-async-trait = {version = "0.1"}
-futures = {version = "0.3"}
-serde = {version = "1.0", features = ["derive"]}
+async-trait = {version = "0.1.42"}
+futures = {version = "0.3.8"}
+serde = {version = "1.0.118", features = ["derive"]}
 # optional dependencies
-json5 = {version = "0.2", optional = true}
-rmp-serde = {version = "0.14", optional = true}
-ron = {version = "0.6", optional = true}
-serde-xml-rs = {version = "0.4", optional = true}
-serde_ini = {version = "0.2", optional = true}
-serde_json = {version = "1.0", optional = true}
-serde_yaml = {version = "0.8", optional = true}
-toml = {version = "0.5", optional = true}
+json5 = {version = "0.3.0", optional = true}
+rmp-serde = {version = "0.15.0", optional = true}
+serde_ini = {version = "0.2.0", optional = true}
+serde_json = {version = "1.0.60", optional = true}
+serde_yaml = {version = "0.8.14", optional = true}
+toml = {version = "0.5.8", optional = true}
 
 [dev-dependencies]
-rmp-serde = {version = "0.14"}
+rmp-serde = {version = "0.15.0"}
 rstest = {version = "0.6.4"}
-serde_json = {version = "1.0"}
-serde_yaml = {version = "0.8"}
+serde_json = {version = "1.0.60"}
+serde_yaml = {version = "0.8.14"}
 tokio = {version = "0.3.5", features = ["rt", "rt-multi-thread", "macros", "fs", "io-util"]}

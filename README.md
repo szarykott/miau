@@ -40,11 +40,15 @@ At this point you can use resulting entity to read configuration with simple DSL
 
 Each time you want to specify that you want to read entry in a **map** use simple string. When you want to read particular index in the **array** use [number] (a integer surrounded by square brackets). Different keys are separated by **":"** character.
 
+It is important to note that values retrieved from `Configuration` can not always be borrowed due to memory model used. **Therefore it is impossible to retrieve `&str` for all kind of values.** It is possible for some of them, but for easee of use reasons it is better to always retrieve `String`. Same applies for all other references.
+
 `Configuration` can be converted into a struct of choice as long as it implements `serde`'s `Deserialize` trait and does not have any borrowed fields (effectively implementing `DeserializeOwned`).
 
 Library provides also lensing capabilities, that is - allows you to focus on a chosen subsection of configuration and treat it as if it was top level node.
 
 You'll find basic example underneath.
+
+**Please keep in mind that as there are multiple structs holding configuration inside library, read access is granted by a common trait implemented by all of them - `ConfigurationRead`. It has to be in scope to have access to reading methods.**
 
 ```rust
 use miau::{
@@ -81,6 +85,7 @@ fn main() {
         ),
     };
 
+    // `get` method is defined in ConfigurationRead trait. It has to be in scope!
     let from_map_then_array: Option<i32> = configuration.get("map:[1]");
 }
 ```
@@ -97,12 +102,28 @@ Goal of this library is to provide core functionality of creating layered config
 That is why its only heavy dependency is `serde` and it only defines `Sources` and `Providers` that can be implemented using standard library. Only most popular formats are part of `Miau` and even they are all feature flagged. This is also why no `async` trait is implemented - there are multiple heavy executors. For the same reason no HTTP source is included - HTTP libraries are numerous.
 
 Implementing support for aforementioned utilities should be done in separate crates (which is possible thanks to public traits).
-)
+
+## Feature flags
+
+By default no feature flag is enabled.
+
+* `ini` - activates support for Ini format
+* `json` - activates support for Json format
+* `msgpack` - activates support for Message Pack format
+* `serde_json5` - activates support for Json5 format
+* `serde_toml` - activates support for Toml format
+* `yaml` - activates support for Yaml format
+* `all` - activates all other feature flags
 
 ## Contributing
 
 `Miau` will accept one-time contributions if they are of high quality, unit tested and fit well within its philosophy (laid out in `Why` and `How` sections). Willing maintainers are also welcome as author of this library believes one person cannot truly maintain open source library for a long time.
 
+Features that were not included in first version of `Miau` but might be for some reasons useful are :
+* mechanism to refresh configuration as a result of some events or periodically (however it could be better to implement it in generic way outside of this crate)
+
+In your contributions remember to update docs and assets if necessary (with generate_assets.sh script).
+
 ## License
 
-MIT
+[MIT](./LICENSE.md)

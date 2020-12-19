@@ -11,8 +11,24 @@ use std::convert::{From, TryFrom, TryInto};
 /// Allows scoping into configuration section of choice for read only access.
 /// It can be seen as a borrowed version of [`Configuration`](super::Configuration).
 ///
+/// To read values from `Lens` you need to pull [`ConfigurationRead`](super::ConfigurationRead) in scope.
+///
 /// # Example
-/// TODO: Add example
+///```rust
+///use miau::configuration::{Configuration, ConfigurationRead};
+///
+///let configuration = Configuration::default(); //  aka empty
+///
+///let lens = configuration.lens();
+///match lens.try_lens("key") {
+///    Ok(descended) => {
+///        let word: Option<String> = lens.get("word");
+///        assert_eq!(None, word);
+///    }
+///    // lensing operation can fail if e.g key is unparsable
+///    Err(e) => println!("Oh no! {}", e),
+///};
+///```
 #[derive(Debug)]
 pub struct Lens<'config> {
     roots: Vec<ConfigurationDefinitionLens<'config>>,

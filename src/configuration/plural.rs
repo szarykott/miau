@@ -16,6 +16,16 @@ use std::{
 ///
 /// Allows retrieving data stored in all trees, merging them, creating lenses and converting into strongly typed structs.
 /// `Configuration` should only be created by builder or sources. Most functions are public to server most bizzare needs.
+///
+/// To read values from `Configuration` you need to pull [`ConfigurationRead`](super::ConfigurationRead) in scope.
+/// # Example
+///```rust
+///use miau::configuration::{Configuration, ConfigurationRead};
+///
+///let configuration = Configuration::default(); //  aka empty
+///let word: Option<String> = configuration.get("word");
+///assert_eq!(None, word);
+///```
 #[derive(Debug, Clone, Deserialize)]
 #[serde(from = "ConfigurationTree")]
 pub struct Configuration {

@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use miau::{
-    builder::{AsyncConfigurationBuilder, ConfigurationBuilder},
-    error::ConfigurationError,
-    format,
-    format::Format,
-    source::{AsyncSource, FileSource, InMemorySource, Source},
+    builder::AsyncConfigurationBuilder, configuration::ConfigurationRead,
+    error::ConfigurationError, format, format::Json5, provider::EnvironmentProvider,
+    source::AsyncSource,
 };
 use std::path::{Path, PathBuf};
 use tokio::{fs::File, io::AsyncReadExt};
@@ -63,7 +61,41 @@ fn main() {
 }
 
 async fn async_main() {
-    // Let's start with synchronous builder to demonstrate how to combine it with async source
-    // It is
-    let mut builder = ConfigurationBuilder::new();
+    // it is also possible to start with synchronous builder and convert it to asynchronous one
+    let mut builder = AsyncConfigurationBuilder::default();
+
+    let result = builder
+        // synchronous sources can be added to asynchronous builder
+        .add_provider(EnvironmentProvider::default())
+        // adding first async source
+        .add_async(
+            AsyncFileSource::from_path("./files/config.json"), // specify source first
+            format::json(), // predefined formats can be specified with format::* helper methods
+        )
+        // adding second async source
+        .add_async(
+            AsyncFileSource::from_path("./files/config.json5"),
+            Json5::default(), // structs implementing `Format` trait can also be used directly
+        )
+        .build()
+        .await; // only now all values will be fetched
+
+    let configuration = match result {
+        Ok(configuration) => configuration,
+        Err(e) => panic!(
+            "Please make sure you run `cargo run` from examples folder! {}",
+            e.pretty_display()
+        ),
+    };
+
+    // more elaborate example about retrieving values can be found in `basic` example
+
+    let from_json: Option<i32> = configuration.get("map:value"); // index into maps by using ':' between keys
+    assert_eq!(Some(1), from_json);
+
+    let from_json5: Option<bool> = configuration.get("map:boolean");
+    assert_eq!(Some(false), from_json5); // notice json5 overwrites this value
+
+    let from_array: Option<i32> = configuration.get("array:[1]"); // use [x] to mark you are indexing into array
+    assert_eq!(Some(2), from_array);
 }

@@ -12,6 +12,18 @@ use std::{
 /// Stores information from single configuration source.
 ///
 /// It is a tree whoose nodes can be maps or arrays of other trees and leaves are values.
+///
+/// To read values from `ConfigurationTree` you need to pull [`ConfigurationRead`](super::ConfigurationRead) in scope.
+/// # Example
+///```rust
+///use miau::configuration::{Configuration, ConfigurationRead, Value, ConfigurationTree};
+///
+/// // just for demonstration purpose, you should rely on serde and Configuration to get reference to tree
+///let configuration = ConfigurationTree::Value(None);
+///
+///let word: Option<String> = configuration.get("word");
+///assert_eq!(None, word);
+///```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ConfigurationTree {

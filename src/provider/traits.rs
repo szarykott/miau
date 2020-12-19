@@ -22,6 +22,7 @@ pub trait Provider {
 #[async_trait]
 pub trait AsyncProvider: Send + Sync {
     /// Collects given source into `Configuration`.
+    /// It uses [`async_trait`](async_trait::async_trait) which is required to implement `AsyncSource`.
     async fn collect(&self) -> Result<Configuration, ConfigurationError>;
     /// Describes this provider.
     fn describe(&self) -> ConfigurationInfo;

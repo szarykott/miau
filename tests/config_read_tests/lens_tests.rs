@@ -98,7 +98,7 @@ fn test_lensing_with_multiple_configs() {
     assert_eq!(Some(3), lens.get("array:[0]"));
     assert_eq!(Some(2), lens.get("array:[1]"));
     assert_eq!(Some(3), lens.get("array:[2]"));
-    assert_eq!(Some("2".to_string()), lens.get("value")); // TODO: mention this to string in docs
+    assert_eq!(Some("2".to_string()), lens.get("value"));
     assert_eq!(
         None,
         ConfigurationRead::<'_, i32, &str>::get(&lens, "array:[3]")

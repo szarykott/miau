@@ -5,7 +5,6 @@ description = "Async aware and extensible layered configuration system"
 edition = "2018"
 homepage = "https://github.com/szarykott/miau"
 keywords = ["configuration", "async", "config", "layered"]
-license = "MIT"
 license-file = "LICENSE.md"
 name = "miau"
 readme = "README.md"

@@ -31,8 +31,6 @@
 //!
 //! **Refer to examples inside the source code repository to learn how to construct configuration and define your own sources.**
 
-// TODO: Add ConfigurationRead trait?
-
 #![deny(unsafe_code)]
 #![deny(missing_docs)]
 /// Configuration builders

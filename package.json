@@ -9,7 +9,6 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "mermaid": "node_modules/.bin/mmdc"
   },
   "repository": {
     "type": "git",

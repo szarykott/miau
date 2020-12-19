@@ -1,2 +1,19 @@
 graph LR
-    Start --> Stop
+    subgraph collection
+    Source --> Provider
+    Format --> Provider
+    AsyncSource --> AsyncProvider
+    Format --> AsyncProvider
+    end
+    subgraph building and layering
+    Provider -->|move|Builder
+    Provider -->|move|AsyncBuilder
+    AsyncProvider -->|move|AsyncBuilder
+    end
+    subgraph readable configuration
+    Builder -->|clone|Configuration
+    AsyncBuilder -->|clone|Configuration
+    Configuration -->|clone|Struct
+    Configuration -.-|reference|Lens
+    Lens -->|clone|Struct
+    end

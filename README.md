@@ -1,5 +1,4 @@
 # Miau
-[![Crates.io](https://img.shields.io/crates/d/miau.svg)](https://crates.io/crates/miau)
 [![Docs.rs](https://docs.rs/miau/badge.svg)](https://docs.rs/miau/)
 ## What
 

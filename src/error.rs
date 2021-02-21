@@ -256,6 +256,7 @@ impl Display for ErrorCode {
     }
 }
 
+
 impl Deref for ConfigurationError {
     type Target = ErrorImpl;
 
@@ -266,12 +267,11 @@ impl Deref for ConfigurationError {
 
 impl std::error::Error for ConfigurationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self.inner.code {
-            ErrorCode::IoError(ref e) => Some(e),
-            _ => None,
-        }
+        Some(&self.inner.code)
     }
 }
+
+impl std::error::Error for ErrorCode {}
 
 impl From<std::io::Error> for ConfigurationError {
     fn from(e: std::io::Error) -> Self {

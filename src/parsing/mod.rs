@@ -21,7 +21,7 @@ pub(crate) fn str_to_key(input: &str) -> Result<CompoundKey, ConfigurationError>
                 Err(e) => return Err(ErrorCode::ParsingError(format!("Error occured while parsing `{}` : {}", trimmed_key, e.to_string())).into()),
             }
         } else {
-            result.push(Key::Map(trimmed_key.to_owned()))
+            result.push(Key::Map(trimmed_key.to_ascii_lowercase()))
         }
     }
 
